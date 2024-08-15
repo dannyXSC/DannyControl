@@ -61,24 +61,43 @@ class TransformHandPositionCoords(Component):
         cross_product = normalize_vector(
             np.cross(palm_direction, palm_normal)
         )  # Current X
-        return [cross_product, palm_direction, palm_normal]
+        return [cross_product, -palm_direction, palm_normal]
+
+    # # Create a coordinate frame for the arm
+    # def _get_hand_dir_frame(
+    #     self, origin_coord, index_knuckle_coord, pinky_knuckle_coord
+    # ):
+
+    #     palm_normal = normalize_vector(
+    #         np.cross(index_knuckle_coord, pinky_knuckle_coord)
+    #     )  # Unity space - Y
+    #     palm_direction = normalize_vector(
+    #         index_knuckle_coord + pinky_knuckle_coord
+    #     )  # Unity space - Z
+    #     cross_product = normalize_vector(
+    #         index_knuckle_coord - pinky_knuckle_coord
+    #     )  # Unity space - X
+
+    #     return [origin_coord, cross_product, palm_normal, palm_direction]
 
     # Create a coordinate frame for the arm
     def _get_hand_dir_frame(
         self, origin_coord, index_knuckle_coord, pinky_knuckle_coord
     ):
-
         palm_normal = normalize_vector(
             np.cross(index_knuckle_coord, pinky_knuckle_coord)
         )  # Unity space - Y
         palm_direction = normalize_vector(
             index_knuckle_coord + pinky_knuckle_coord
         )  # Unity space - Z
-        cross_product = normalize_vector(
-            index_knuckle_coord - pinky_knuckle_coord
-        )  # Unity space - X
+        # cross_product = normalize_vector(
+        #     index_knuckle_coord - pinky_knuckle_coord
+        # )  # Unity space - X
+        cross_product = np.cross(palm_direction, palm_normal)  # Unity space - X
 
-        return [origin_coord, cross_product, palm_normal, palm_direction]
+        return [origin_coord, cross_product, -palm_normal, palm_direction]
+        # frame in local
+        # return [origin_coord, palm_direction, -cross_product, palm_normal]
 
     def transform_keypoints(self, hand_coords):
         translated_coords = self._translate_coords(hand_coords)

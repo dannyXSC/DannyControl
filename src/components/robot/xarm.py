@@ -12,7 +12,6 @@ XARM_HOME_VALUES = [316.79242, 20.13295, 40.77933, 178.10439, 1.829454, 3.611926
 
 
 class Xarm(RobotWrapper):
-
     def __init__(self, ip):
         # is_radian: 设置用角度
         self._controller = XArmAPI(ip, is_radian=False)
@@ -86,13 +85,20 @@ class Xarm(RobotWrapper):
     def move(self, input_angles):
         self._controller.set_servo_angle(angle=input_angles)
 
-    def move_coords(self, input_coords):
+    def move_coords(self, input_coords, speed=100, wait=True):
         # input_coords: [x,y,z,roll,pitch,yaw]
         x, y, z, roll, pitch, yaw = input_coords[:6]
         # TODO: 是否要阻塞
         self._controller.set_position(
-            x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw, wait=True
+            x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw, wait=wait, speed=speed
         )
+
+    def move_matrix(self, input_matrix, speed=100):
+        t = input_matrix[:3, 3]
+        R = Rotation.from_matrix(input_matrix[:3, :3]).as_euler("xyz", degrees=True)
+        cart = np.concatenate([t, R], axis=0)
+
+        self.move_coords(cart, speed=speed)
 
     def stop(self):
         self._controller.disconnect()

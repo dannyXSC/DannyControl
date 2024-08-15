@@ -6,7 +6,7 @@ detector:
   host: ${host_address}
   oculus_port: ${oculus_reciever_port}
   keypoint_pub_port: ${keypoint_port}
-  log: True
+  log: False
 
 # Transformation classes used to transform the keypoints
 transforms:
@@ -24,6 +24,7 @@ operators:
     host: ${host_address}
     transformed_keypoints_port: ${transformed_position_keypoint_port}
     xarm_ip: '10.177.63.209'
+    log: True
 
 # List of controller classes used
 controllers:

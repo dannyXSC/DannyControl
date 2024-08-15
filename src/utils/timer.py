@@ -20,6 +20,52 @@ class FrequencyTimer(object):
             continue
 
 
+class StationTimer(object):
+    def __init__(self, duration, threshold) -> None:
+        self.pre_state = None
+
+        self.pre_time = None
+        self.duration = duration
+        self.threshold = threshold
+
+    def trigger(self, state):
+        if not self._validation(state):
+            self._set(state)
+
+        if self._success(state):
+            return True
+        else:
+            return False
+
+    def get_state(self):
+        return self.pre_state
+
+    def _set(self, state):
+        self.pre_state = state
+        self.pre_time = int(time.time())
+
+    def _validation(self, state):
+        # if self.pre_state is not None:
+        #     print(np.linalg.norm(self.pre_state - state))
+
+        if (
+            self.pre_state is not None
+            and np.linalg.norm(self.pre_state - state) < self.threshold
+        ):
+            return True
+        return False
+
+    def _success(self, state):
+        cur_time = int(time.time())
+        # 如果开始，并且相比于第一次记录已经过了duration
+        if self.pre_time is not None and cur_time > self.pre_time + self.duration:
+            # 记录稳定时候的状态
+            self.pre_state = state
+            return True
+        else:
+            return False
+
+
 class SocketChecker(object):
     def __init__(self, host, port, topic_name, print_data, data_type=None):
         self.data = None

@@ -49,6 +49,12 @@ class RealsenseCameras(ProcessInstantiator):
             )
 
 
+# Function to start the components
+def _start_component(configs):
+    component = hydra.utils.instantiate(configs)
+    component.stream()
+
+
 class TeleOperator(ProcessInstantiator):
     """
     Returns all the teleoperation processes. Start the list of processes
@@ -71,29 +77,22 @@ class TeleOperator(ProcessInstantiator):
         if configs.operate:
             self._init_operator()
 
-    # Function to start the components
-    def _start_component(self, configs):
-        component = hydra.utils.instantiate(configs)
-        component.stream()
-
     # Function to start the detector component
     def _init_detector(self):
         self.processes.append(
-            Process(target=self._start_component, args=(self.configs.robot.detector,))
+            Process(target=_start_component, args=(self.configs.robot.detector,))
         )
 
     # Function to start the sim environment
     def _init_sim_environment(self):
         for env_config in self.configs.robot.environment:
-            self.processes.append(
-                Process(target=self._start_component, args=(env_config,))
-            )
+            self.processes.append(Process(target=_start_component, args=(env_config,)))
 
     # Function to start the keypoint transform
     def _init_keypoint_transform(self):
         for transform_config in self.configs.robot.transforms:
             self.processes.append(
-                Process(target=self._start_component, args=(transform_config,))
+                Process(target=_start_component, args=(transform_config,))
             )
 
     # Function to start the operator
@@ -101,5 +100,5 @@ class TeleOperator(ProcessInstantiator):
         for operator_config in self.configs.robot.operators:
 
             self.processes.append(
-                Process(target=self._start_component, args=(operator_config,))
+                Process(target=_start_component, args=(operator_config,))
             )

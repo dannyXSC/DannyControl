@@ -8,7 +8,7 @@ from scipy.spatial.transform import Rotation, Slerp
 from scipy.spatial.transform import Rotation as R
 
 
-XARM_HOME_VALUES = [316.79242, 20.13295, 40.77933, 178.10439, 1.829454, 3.611926]
+XARM_HOME_VALUES = [462.5, 7.2, 127.7, 179.7, -0.3, -7.1]
 
 
 class Xarm(RobotWrapper):
@@ -31,6 +31,13 @@ class Xarm(RobotWrapper):
         self._controller.set_mode(0)
         # set state: sport state
         self._controller.set_state(state=0)
+
+        # for gripper
+        self._controller.set_gripper_mode(0)
+        self._controller.set_gripper_enable(True)
+        self._max_gripper_value = 850
+        # defalt 0
+        # self._min_gripper_value = 0
 
     @property
     def name(self):
@@ -85,20 +92,50 @@ class Xarm(RobotWrapper):
     def move(self, input_angles):
         self._controller.set_servo_angle(angle=input_angles)
 
-    def move_coords(self, input_coords, speed=100, wait=True):
+    def move_coords(self, input_coords, speed=100, wait=True, wait_motion=True):
         # input_coords: [x,y,z,roll,pitch,yaw]
         x, y, z, roll, pitch, yaw = input_coords[:6]
-        # TODO: 是否要阻塞
         self._controller.set_position(
-            x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw, wait=wait, speed=speed
+            x=x,
+            y=y,
+            z=z,
+            roll=roll,
+            pitch=pitch,
+            yaw=yaw,
+            wait=wait,
+            speed=speed,
+            wait_motion=wait_motion,
         )
 
-    def move_matrix(self, input_matrix, speed=100):
+    def move_matrix(self, input_matrix, speed=100, wait=True, wait_motion=True):
         t = input_matrix[:3, 3]
         R = Rotation.from_matrix(input_matrix[:3, :3]).as_euler("xyz", degrees=True)
         cart = np.concatenate([t, R], axis=0)
 
-        self.move_coords(cart, speed=speed)
+        self.move_coords(
+            cart,
+            speed=speed,
+            wait=wait,
+            wait_motion=wait_motion,
+        )
+
+    def move_gripper(self, position, wait=False, speed=5000, wait_motion=False):
+        self._controller.set_gripper_position(
+            position,
+            wait=wait,
+            speed=speed,
+            wait_motion=wait_motion,
+        )
+
+    def move_gripper_percentage(
+        self, percentage, wait=False, speed=5000, wait_motion=False
+    ):
+        self._controller.set_gripper_position(
+            percentage * self._max_gripper_value,
+            wait=wait,
+            speed=speed,
+            wait_motion=wait_motion,
+        )
 
     def stop(self):
         self._controller.disconnect()
@@ -110,3 +147,7 @@ class Xarm(RobotWrapper):
             )
         )
         # TODO：Do different processing according to the error code
+
+    def clear_cache(self):
+        self._controller.set_state(4)
+        self._controller.set_state(0)

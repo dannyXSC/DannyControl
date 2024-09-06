@@ -158,7 +158,7 @@ class XarmOperator(Operator):
         # 1 for open
         self.gripper_state = 1
         self.robot.move_gripper_percentage(1)
-
+        # abcs
         return first_hand_frame
 
     # Apply retargeted angles

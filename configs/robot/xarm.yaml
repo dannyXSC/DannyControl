@@ -24,7 +24,7 @@ operators:
     host: ${host_address}
     transformed_keypoints_port: ${transformed_position_keypoint_port}
     xarm_ip: '10.177.63.209'
-    scale_vector: [300,300,500]
+    scale_vector: [1000,1000,1000]
     comp_ratio: 0.5
     # log: True
 

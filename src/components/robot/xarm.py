@@ -8,7 +8,14 @@ from scipy.spatial.transform import Rotation, Slerp
 from scipy.spatial.transform import Rotation as R
 
 
-XARM_HOME_VALUES = [462.5, 7.2, 127.7, 179.7, -0.3, -7.1]
+XARM_HOME_VALUES = [
+    366,
+    -39.1,
+    20,
+    180,
+    0,
+    0,
+]
 
 
 class Xarm(RobotWrapper):

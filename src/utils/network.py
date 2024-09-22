@@ -5,6 +5,7 @@ import numpy as np
 import pickle
 import blosc as bl
 import threading
+from abc import ABC, abstractmethod
 
 
 # ZMQ Sockets
@@ -256,5 +257,57 @@ class ZMQButtonFeedbackSubscriber(threading.Thread):
 
     def stop(self):
         print("Closing the subscriber socket in {}:{}.".format(self._host, self._port))
+        self.socket.close()
+        self.context.term()
+
+
+class ZMQPayloadPublisher(ABC):
+    def __init__(self, host, port):
+        self._host, self._port = host, port
+        self._init_publisher()
+
+    def _init_publisher(self):
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.PUB)
+        self.socket.bind("tcp://{}:{}".format(self._host, self._port))
+
+    def pub_payload(self, payload):
+        payload = self.preprocessing(payload)
+        self.socket.send(b"pyaload " + pickle.dumps(payload, protocol=-1))
+
+    def stop(self):
+        print("Closing the publisher socket in {}:{}.".format(self._host, self._port))
+        self.socket.close()
+        self.context.term()
+
+    @abstractmethod
+    def preprocessing(self, payload):
+        pass
+
+
+class ZMQPayloadSubscriber(ABC):
+    def __init__(self, host, port):
+        self._host, self._port = host, port
+        self._init_subscriber()
+
+    def _init_subscriber(self):
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.SUB)
+        self.socket.setsockopt(zmq.CONFLATE, 1)
+        self.socket.connect("tcp://{}:{}".format(self._host, self._port))
+        self.socket.setsockopt(zmq.SUBSCRIBE, b"pyaload")
+
+    def recv_payload(self):
+        raw_data = self.socket.recv()
+        raw_data = raw_data.lstrip(b"payload ")
+        payload = pickle.loads(raw_data)
+        payload = self.postprocessing(payload)
+
+    @abstractmethod
+    def postprocessing(self, payload):
+        pass
+
+    def stop(self):
+        print("Closing the publisher socket in {}:{}.".format(self._host, self._port))
         self.socket.close()
         self.context.term()

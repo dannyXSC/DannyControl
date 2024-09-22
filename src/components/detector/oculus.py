@@ -11,13 +11,13 @@ from src.utils.network import (
 
 
 class OculusVRHandDetector(Component):
-    def __init__(self, host, oculus_port, keypoint_pub_port, log=False):
+    def __init__(self, host, oculus_port, keypoint_pub_port, is_right=True, log=False):
         self.notify_component_start("vr detector")
         self.log = log
+        self.is_right = is_right
 
-        # Initializing the network socket for getting the raw right hand keypoints
+        # Initializing the network socket for getting the raw hand keypoints depands on is_right flag
         self.raw_keypoint_socket = create_pull_socket(host, oculus_port)
-        # self.raw_keypoint_left_socket = create_pull_socket(host, 8110)
 
         if self.log:
             print(host, oculus_port)
@@ -49,8 +49,12 @@ class OculusVRHandDetector(Component):
 
     # Function to Publish the transformed Keypoints
     def _publish_data(self, keypoint_dict):
+        if self.is_right:
+            topic_name = "right"
+        else:
+            topic_name = "left"
         self.hand_keypoint_publisher.pub_keypoints(
-            keypoint_array=keypoint_dict["keypoints"], topic_name="right"
+            keypoint_array=keypoint_dict["keypoints"], topic_name=topic_name
         )
 
     # Function to Stream the Keypoints
@@ -62,9 +66,6 @@ class OculusVRHandDetector(Component):
                     print("wait")
                 # Getting the raw keypoints
                 raw_keypoints = self.raw_keypoint_socket.recv()
-                # raw_left_keypoints = self.raw_keypoint_left_socket.recv()
-                if self.log:
-                    print(raw_keypoints)
                 # Processing the keypoints and publishing them
                 keypoint_dict = self._extract_data_from_token(raw_keypoints)
 

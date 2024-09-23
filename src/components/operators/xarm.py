@@ -117,8 +117,11 @@ class XarmOperator(Operator):
             return None
         return np.asanyarray(data).reshape(4, 3)
 
-        # Converts a frame to a homogenous transformation matrix
+    # Get the hand frame
+    def _get_hand_frame_block(self):
+        return self.transformed_arm_keypoint_subscriber.recv_keypoints()
 
+    # Converts a frame to a homogenous transformation matrix
     def _turn_frame_to_homo_mat(self, frame):
         t = frame[0]
         R = frame[1:]

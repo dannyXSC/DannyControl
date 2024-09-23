@@ -12,7 +12,9 @@ from src.utils.network import (
 
 class OculusVRHandDetector(Component):
     def __init__(self, host, oculus_port, keypoint_pub_port, is_right=True, log=False):
-        self.notify_component_start("vr detector")
+        self.notify_component_start(
+            f"vr detector, hand {'right' if is_right else 'left'}"
+        )
         self.log = log
         self.is_right = is_right
 

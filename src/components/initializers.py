@@ -71,8 +71,8 @@ class TeleOperator(ProcessInstantiator):
         if "detector" in configs.robot:
             self._init_detector()
         # Start the keypoint transform
-        # if "transforms" in configs.robot:
-        #     self._init_keypoint_transform()
+        if "transforms" in configs.robot:
+            self._init_keypoint_transform()
 
         # if configs.operate:
         #     self._init_operator()

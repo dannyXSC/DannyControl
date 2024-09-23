@@ -4,10 +4,10 @@ robot_name: xarm
 detector:
   _target_: src.components.detector.oculus.OculusVRHandDetector
   host: ${host_address}
-  oculus_port: ${oculus_reciever_port}
+  oculus_port: ${left_hand_receiver_port}
   keypoint_pub_port: ${keypoint_port}
-  is_right: True
-  log: False
+  is_right: ${is_right}
+  log: True
 
 # Transformation classes used to transform the keypoints
 transforms:
@@ -17,6 +17,8 @@ transforms:
     keypoint_port: ${keypoint_port}
     transformation_port: ${transformed_position_keypoint_port}
     moving_average_limit: 1
+    is_right: ${is_right}
+
 
 # Operators used to retarget the keypoints
 operators:
@@ -28,6 +30,7 @@ operators:
     scale_vector: [1000,1000,1000]
     comp_ratio: 0.5
     # log: True
+    is_right: ${is_right}
 
 # List of controller classes used
 controllers:

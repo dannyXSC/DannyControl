@@ -64,8 +64,7 @@ class OculusVRHandDetector(Component):
         while True:
             try:
                 self.timer.start_loop()
-                if self.log:
-                    print("wait")
+
                 # Getting the raw keypoints
                 raw_keypoints = self.raw_keypoint_socket.recv()
                 # Processing the keypoints and publishing them

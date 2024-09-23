@@ -71,7 +71,11 @@ class LogTimer(object):
         self.pre_time = int(time.time())
         self.duration = duration
 
-    def trigger(self, log):
+    def validate(self):
+        cur_time = int(time.time())
+        return cur_time > self.pre_time + self.duration
+
+    def trigger(self, log=""):
         cur_time = int(time.time())
         if cur_time > self.pre_time + self.duration:
             print(log)

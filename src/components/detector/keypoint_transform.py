@@ -8,7 +8,7 @@ from src.utils.network import (
     ZMQKeypointSubscriber,
     ZMQButtonFeedbackSubscriber,
 )
-from src.utils.timer import FrequencyTimer
+from src.utils.timer import FrequencyTimer, LogTimer
 
 
 class TransformHandPositionCoords(Component):
@@ -19,9 +19,11 @@ class TransformHandPositionCoords(Component):
         transformation_port,
         moving_average_limit=5,
         is_right=True,
+        log=False,
     ):
         self.notify_component_start("keypoint position transform")
 
+        self.log = log
         self.is_right = is_right
 
         if is_right:
@@ -39,6 +41,7 @@ class TransformHandPositionCoords(Component):
         )
         # Timer
         self.timer = FrequencyTimer(VR_FREQ)
+        self.log_timer = LogTimer(1)
         # Keypoint indices for knuckles
         self.knuckle_points = (
             OCULUS_JOINTS["knuckles"][0],
@@ -115,7 +118,12 @@ class TransformHandPositionCoords(Component):
         cross_product = np.cross(palm_direction, palm_normal)
         # Unity space - X
 
-        return [origin_coord, cross_product, palm_normal, -palm_direction]
+        if self.log:
+            if self.log_timer.validate():
+                self.log_timer.trigger()
+                print([origin_coord, -cross_product, palm_normal, palm_direction])
+
+        return [origin_coord, -cross_product, palm_normal, palm_direction]
 
     def transform_keypoints(self, hand_coords):
         translated_coords = self._translate_coords(hand_coords)
@@ -175,7 +183,7 @@ class TransformHandPositionCoords(Component):
                     )
 
                 self.timer.end_loop()
-            except:
+            except KeyboardInterrupt:
                 break
 
         self.original_keypoint_subscriber.stop()

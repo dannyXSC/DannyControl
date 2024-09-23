@@ -1,7 +1,7 @@
 from .operator import Operator
 from src.utils.network import ZMQKeypointSubscriber
 from src.components.robot.xarm import Xarm
-from src.utils.timer import FrequencyTimer, StationTimer
+from src.utils.timer import FrequencyTimer, StationTimer, LogTimer
 from src.utils.vectorops import *
 from src.constants import *
 
@@ -195,16 +195,10 @@ class XarmOperator(Operator):
         final_pose = self.robot_init_H @ m_transition
 
         pose_cart = self._homo2cart(final_pose)
-        final_pose_cart = self.comp_filter(pose_cart)
 
-        if self.log:
-            cur_time = time.time()
-            if cur_time > self.pre_time + 1:
-                print(f"pose_cart      : {pose_cart}")
-                print(f"final_pose_cart: {final_pose_cart}")
-                self.pre_time = cur_time
+        # pose_cart = self.comp_filter(pose_cart)
 
-        self.robot.move_coords(final_pose_cart, speed=300)
+        self.robot.move_coords(pose_cart, speed=1000)
 
         gripper_state = self.get_gripper_state()
         if gripper_state != self.gripper_state:
@@ -219,6 +213,9 @@ class XarmOperator(Operator):
         print("Start controlling the robot hand using the Oculus Headset.\n")
 
         # Assume that the initial position is considered initial after 3 seconds of the start
+        start_time = int(time.time())
+        cnt = 0
+        log_timer = LogTimer(1)
         while True:
             try:
                 if not self.robot.if_shutdown():
@@ -228,6 +225,13 @@ class XarmOperator(Operator):
                     self._apply_retargeted_angles()
 
                     self.timer.end_loop()
+
+                    cnt += 1
+                    if log_timer.validate():
+                        duration = int(time.time()) - start_time
+                        frequency = cnt / (duration + 1)
+                        print(f"operation frequency: {frequency}")
+
             except KeyboardInterrupt:
                 break
 

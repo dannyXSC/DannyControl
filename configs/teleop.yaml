@@ -11,6 +11,7 @@ sim_env: false
 run_xela:  false
 
 is_right: false
+log: false
 
 # Visualize 3D and 2D plots
 visualize_xela: false

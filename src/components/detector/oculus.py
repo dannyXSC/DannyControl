@@ -73,7 +73,7 @@ class OculusVRHandDetector(Component):
                 # Publish Data
                 self._publish_data(keypoint_dict)
                 self.timer.end_loop()
-            except:
+            except KeyboardInterrupt:
                 break
 
         self.raw_keypoint_socket.close()

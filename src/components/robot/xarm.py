@@ -111,7 +111,7 @@ class Xarm(RobotWrapper):
             yaw=yaw,
             wait=wait,
             speed=speed,
-            wait_motion=wait_motion,
+            # wait_motion=wait_motion,
         )
 
     def move_matrix(self, input_matrix, speed=100, wait=True, wait_motion=True):

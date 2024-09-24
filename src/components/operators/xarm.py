@@ -13,6 +13,10 @@ from copy import deepcopy as copy
 import zmq
 import time
 
+XARM_ANCHOR_O_VALUES = [366, -39.1, 0, 180, 0, 90]
+XARM_ANCHOR_P1_VALUES = [374, 158, 0, 180, 0, 90]
+XARM_ANCHOR_P2_VALUES = [638, -36.2, 0, 180, 0, 90]
+
 
 # Rotation should be filtered when it's being sent
 class Filter:
@@ -61,10 +65,11 @@ class XarmOperator(Operator):
         self._robot = Xarm(xarm_ip)
         # Frequency timer
         self._timer = FrequencyTimer(VR_FREQ)
-        self._station_timer = StationTimer(1, 0.1)
+        self._station_timer = StationTimer(2, 0.01)
+        self._log_timer = LogTimer(1)
 
         self._scale_vector = np.array(scale_vector)
-        self._P = [[0, -1, 0, 0], [0, 0, 1, 0], [1, 0, 0, 0], [0, 0, 0, 1]]
+        self._P = [[1, 0, 0], [0, 0, 1], [0, 1, 0]]
 
         # filter ratio
         self.comp_ratio = comp_ratio
@@ -73,6 +78,17 @@ class XarmOperator(Operator):
 
         if self.log:
             self.pre_time = time.time()
+
+        self.robot_o = np.array(XARM_ANCHOR_O_VALUES[:3])
+        self.robot_y = np.array(XARM_ANCHOR_P1_VALUES[:3]) - self.robot_o
+        self.robot_x = np.array(XARM_ANCHOR_P2_VALUES[:3]) - self.robot_o
+        # orthogonalization
+        self.robot_x = self._orthogonalization(self.robot_y, self.robot_x)
+        self.robot_z = normalize_vector(np.cross(self.robot_x, self.robot_y))
+
+        self.robot_init_rotation = R.from_euler(
+            "xyz", XARM_ANCHOR_O_VALUES[3:], degrees=True
+        ).as_matrix()
 
     @property
     def timer(self):
@@ -102,11 +118,11 @@ class XarmOperator(Operator):
             return None
         return np.asanyarray(data).reshape(4, 3)
 
+    # Get the hand frame
     def _get_hand_frame_block(self):
         return self.transformed_arm_keypoint_subscriber.recv_keypoints()
 
-        # Converts a frame to a homogenous transformation matrix
-
+    # Converts a frame to a homogenous transformation matrix
     def _turn_frame_to_homo_mat(self, frame):
         t = frame[0]
         R = frame[1:]
@@ -119,6 +135,11 @@ class XarmOperator(Operator):
         return homo_mat
 
         # Convert Homogenous matrix to cartesian vector
+
+    def _turn_frame_to_rotation_mat(self, frame):
+        R = frame[1:]
+
+        return np.transpose(R)
 
     def _homo2cart(self, homo_mat):
         t = homo_mat[:3, 3]
@@ -141,30 +162,73 @@ class XarmOperator(Operator):
         else:
             return 0
 
+    def _orthogonalization(self, v1, v2):
+        # orthogonalization v2 base on v1
+        return v2 - np.dot(v1, v2) * v1 / np.dot(v1, v1)
+
     # Reset the teleoperation
     def _reset_teleop(self):
         print("****** RESETTING TELEOP ****** ")
-        self.robot.home()
+        self.robot.move_coords(XARM_ANCHOR_O_VALUES)
+        # robot_init_cart = self._homo2cart(self.robot_init_H)
+        # self.comp_filter = Filter(robot_init_cart, comp_ratio=self.comp_ratio)
 
-        self.robot_init_H = self.robot.get_rotation_matrix()
-        robot_init_cart = self._homo2cart(self.robot_init_H)
-        self.comp_filter = Filter(robot_init_cart, comp_ratio=self.comp_ratio)
+        anchors_counts = 0
+        anchors = []
+        pre_state = False
+        # self.hand_init_origin = first_hand_frame[0]
+        # self.hand_init_H = self._turn_frame_to_homo_mat(first_hand_frame)
+        # self.hand_init_t = copy(self.hand_init_H[:3, 3])
 
-        # first_hand_frame = self._get_hand_frame()
-        # while first_hand_frame is None:
-        #     first_hand_frame = self._get_hand_frame()
-        first_hand_frame = self._get_hand_frame_block()
-        self.hand_init_origin = first_hand_frame[0]
-        self.hand_init_H = self._turn_frame_to_homo_mat(first_hand_frame)
-        self.hand_init_t = copy(self.hand_init_H[:3, 3])
+        # for three anchor
+        while anchors_counts < 3:
+            # hand_frame = self._get_hand_frame()
+            # while hand_frame is None:
+            #     hand_frame = self._get_hand_frame()
+            hand_frame = self._get_hand_frame_block()
+            origin = hand_frame[0]
+
+            state = self._station_timer.trigger(origin)
+            if pre_state == False and state == True:
+                anchors.append(self._station_timer.get_state())
+                anchors_counts += 1
+                print(anchors_counts, anchors)
+
+                # init rotation matrix
+                # last hand position
+                if anchors_counts == 2:
+                    self.hand_init_rotation = self._turn_frame_to_rotation_mat(
+                        hand_frame
+                    )
+
+            self._log_timer.trigger(
+                (
+                    f"anchors_counts: {anchors_counts}\n"
+                    f"pre_state: {pre_state}\n"
+                    f"state: {state}\n"
+                )
+            )
+            pre_state = state
+        self.hand_origin = np.array(anchors[2])
+        self.hand_y = np.array(anchors[0]) - self.hand_origin
+        self.hand_x = np.array(anchors[1]) - self.hand_origin
+        self.hand_length_y = np.linalg.norm(self.hand_y)
+        self.hand_length_x = np.linalg.norm(self.hand_x)
+        self.hand_y_normalized = normalize_vector(self.hand_y)
+        self.hand_x_normalized = normalize_vector(
+            self._orthogonalization(self.hand_y, self.hand_x)
+        )
+        # 左手系，所以是相反的
+        self.hand_z_normalized = -np.cross(
+            self.hand_x_normalized, self.hand_y_normalized
+        )
+
         self.is_first_frame = False
 
         # gripper settings
         # 1 for open
         self.gripper_state = 1
         self.robot.move_gripper_percentage(1)
-
-        return first_hand_frame
 
     # Apply retargeted angles
     def _apply_retargeted_angles(self):
@@ -173,32 +237,47 @@ class XarmOperator(Operator):
             return
 
         # moving_hand_frame = self._get_hand_frame()
+        # while moving_hand_frame is None:
+        #     moving_hand_frame = self._get_hand_frame()
         moving_hand_frame = self._get_hand_frame_block()
 
-        if moving_hand_frame is None:
-            return  # It means we are not on the arm mode yet instead of blocking it is directly returning
-
         # hand current transform matrix
-        self.hand_moving_H = self._turn_frame_to_homo_mat(moving_hand_frame)
+        self.hand_cur_rotation = self._turn_frame_to_rotation_mat(moving_hand_frame)
 
         m_transition = (
             np.linalg.pinv(self._P)
-            @ np.linalg.pinv(self.hand_init_H)
-            @ self.hand_moving_H
+            @ np.linalg.pinv(self.hand_init_rotation)
+            @ self.hand_cur_rotation
             @ self._P
         )
 
-        # transform scale
-        m_transition[:3, 3] *= self._scale_vector
-
         # robot arm space move
-        final_pose = self.robot_init_H @ m_transition
+        final_rotation_matrix = self.robot_init_rotation @ m_transition
 
-        pose_cart = self._homo2cart(final_pose)
+        final_rotation = Rotation.from_matrix(final_rotation_matrix).as_euler(
+            "xyz", degrees=True
+        )
 
-        # pose_cart = self.comp_filter(pose_cart)
+        # pose_cart = self._homo2cart(final_pose)
+        # final_pose_cart = self.comp_filter(pose_cart)
 
-        self.robot.move_coords(pose_cart, speed=1000)
+        # TODO: 简化
+        origin = moving_hand_frame[0]
+        final_position = (
+            self.robot_o
+            + np.dot(origin - self.hand_origin, self.hand_x_normalized)
+            / self.hand_length_x
+            * self.robot_x
+            + np.dot(origin - self.hand_origin, self.hand_y_normalized)
+            / self.hand_length_y
+            * self.robot_y
+            + np.dot(origin - self.hand_origin, self.hand_z_normalized)
+            * 1100
+            * self.robot_z
+        )
+        final_pose = [*final_position] + [*final_rotation]
+
+        self.robot.move_coords(final_pose, speed=1000)
 
         gripper_state = self.get_gripper_state()
         if gripper_state != self.gripper_state:
@@ -213,9 +292,6 @@ class XarmOperator(Operator):
         print("Start controlling the robot hand using the Oculus Headset.\n")
 
         # Assume that the initial position is considered initial after 3 seconds of the start
-        start_time = int(time.time())
-        cnt = 0
-        log_timer = LogTimer(1)
         while True:
             try:
                 if not self.robot.if_shutdown():
@@ -225,13 +301,6 @@ class XarmOperator(Operator):
                     self._apply_retargeted_angles()
 
                     self.timer.end_loop()
-
-                    cnt += 1
-                    if log_timer.validate():
-                        duration = int(time.time()) - start_time
-                        frequency = cnt / (duration + 1)
-                        print(f"operation frequency: {frequency}")
-
             except KeyboardInterrupt:
                 break
 

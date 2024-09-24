@@ -32,10 +32,9 @@ class StationTimer(object):
         if not self._validation(state):
             self._set(state)
 
-        if self._success(state):
-            return True
-        else:
             return False
+
+        return self._success(state)
 
     def get_state(self):
         return self.pre_state
@@ -64,6 +63,23 @@ class StationTimer(object):
             return True
         else:
             return False
+
+
+class LogTimer(object):
+
+    def __init__(self, duration) -> None:
+        self.pre_time = int(time.time())
+        self.duration = duration
+
+    def validate(self):
+        cur_time = int(time.time())
+        return cur_time > self.pre_time + self.duration
+
+    def trigger(self, log=""):
+        cur_time = int(time.time())
+        if cur_time > self.pre_time + self.duration:
+            print(log)
+            self.pre_time = cur_time
 
 
 class SocketChecker(object):

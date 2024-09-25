@@ -37,9 +37,11 @@ class Switch(Component):
 
         self.state = STATUS_STOP
 
-        self.timer = FrequencyTimer(10)
+        self.timer = FrequencyTimer(VR_FREQ)
 
         self.station_timer = SwitchStationTimer(2, 0.05)
+
+        self.operation_station_timer = SwitchStationTimer(2, 0.05)
 
     def switch_state(self):
         if self.state == STATUS_STOP:
@@ -49,6 +51,7 @@ class Switch(Component):
 
     def stream(self):
         pre_result = False
+        operation_pre_result = False
         while True:
             try:
                 self.timer.start_loop()
@@ -57,15 +60,27 @@ class Switch(Component):
                 transformed_hand_coords = (
                     self._transformed_hand_keypoint_subscriber.recv_keypoints()
                 )
-                distance = np.linalg.norm(
+                pinky_thumb_distance = np.linalg.norm(
                     transformed_hand_coords[OCULUS_JOINTS["pinky"][-1]]
                     - transformed_hand_coords[OCULUS_JOINTS["thumb"][-1]]
                 )
+                middle_thumb_distance = np.linalg.norm(
+                    transformed_hand_coords[OCULUS_JOINTS["middle"][-1]]
+                    - transformed_hand_coords[OCULUS_JOINTS["thumb"][-1]]
+                )
 
-                result = self.station_timer.trigger(distance)
+                result = self.station_timer.trigger(pinky_thumb_distance)
                 if pre_result == False and result == True:
                     self.switch_state()
                 pre_result = result
+
+                # TODO: close the operation
+                operation_result = self.operation_station_timer.trigger(
+                    middle_thumb_distance
+                )
+                if operation_pre_result == False and operation_result == True:
+                    pass
+                operation_pre_result = operation_result
 
                 self.state_publisher.pub_string(self.state, "state")
 

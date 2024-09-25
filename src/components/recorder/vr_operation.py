@@ -60,11 +60,16 @@ class VROpH5pyDumper(H5pyDumper):
                 if key == camera_key:
                     for cam_name in self.data_dict[camera_key]:
                         # TODO image shape
+                        self.data_dict[camera_key][cam_name] = np.array(
+                            self.data_dict[camera_key][cam_name], dtype=np.uint16
+                        )
+                        print(self.data_dict[camera_key][cam_name].shape)
                         camera.create_dataset(
                             cam_name,
-                            data=self.self.data_dict[camera_key][cam_name],
-                            dtype="uint8",
-                            chunks=(1, 480, 640, 3),
+                            data=self.data_dict[camera_key][cam_name],
+                            # chunks=(1, 3, 720, 1280),
+                            compression="gzip",
+                            compression_opts=6,
                         )
                 else:
                     self.data_dict[key] = np.array(

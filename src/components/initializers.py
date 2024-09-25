@@ -74,7 +74,7 @@ class TeleOperator(ProcessInstantiator):
         if "transforms" in configs.robot:
             self._init_keypoint_transform()
 
-        if "transmitter" in configs.robot:
+        if "transmitters" in configs.robot:
             self._init_transmitter()
 
         if configs.operate:
@@ -87,7 +87,7 @@ class TeleOperator(ProcessInstantiator):
         )
 
     def _init_transmitter(self):
-        for transmitter_config in self.configs.robot.transmitter:
+        for transmitter_config in self.configs.robot.transmitters:
             self.processes.append(
                 Process(target=_start_component, args=(transmitter_config,))
             )
@@ -110,4 +110,17 @@ class TeleOperator(ProcessInstantiator):
 
             self.processes.append(
                 Process(target=_start_component, args=(operator_config,))
+            )
+
+
+class Recorder(ProcessInstantiator):
+    def __init__(self, configs):
+        super().__init__(configs)
+
+        self._init_recorder()
+
+    def _init_recorder(self):
+        for recorder_config in self.configs.recorder:
+            self.processes.append(
+                Process(target=_start_component, args=(recorder_config,))
             )

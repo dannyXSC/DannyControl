@@ -27,7 +27,7 @@ transforms:
     is_right: False
     log: ${log}
 
-transmitter:
+transmitters:
   - 
     _target_: src.components.transmitter.switch.Switch
     host: ${host_address}
@@ -45,15 +45,6 @@ operators:
     xarm_ip: '10.177.63.209'
     comp_ratio: 0.5
     # log: True
-
-recorder:
-  -
-    _target_: src.components.recorder.vr_operation.VROperationRecorder
-    host: ${host_address}
-    listen_port: #TODO:
-    switch_state_port: ${switch_state_port}
-    save_path: ""
-
 
 # List of controller classes used
 controllers:

@@ -1,5 +1,5 @@
 from .operator import Operator
-from src.utils.network import ZMQKeypointSubscriber
+from src.utils.network import ZMQKeypointSubscriber, create_response_socket
 from src.components.robot.xarm import Xarm
 from src.utils.timer import FrequencyTimer, StationTimer, LogTimer
 from src.utils.vectorops import *
@@ -47,11 +47,10 @@ class XarmOperator(Operator):
         self,
         host,
         transformed_keypoints_port,
+        operation_stage_port,
         xarm_ip,
-        scale_vector=np.full((3,), 300),
         comp_ratio=0,
         log=False,
-        is_right=True,
     ):
         self.notify_component_start("xarm operator")
         self.log = log
@@ -61,6 +60,9 @@ class XarmOperator(Operator):
         self._transformed_hand_keypoint_subscriber = ZMQKeypointSubscriber(
             host=host, port=transformed_keypoints_port, topic="transformed_hand_coords"
         )
+        self._operation_response_socket = create_response_socket(
+            host, operation_stage_port
+        )
 
         self._robot = Xarm(xarm_ip)
         # Frequency timer
@@ -68,7 +70,6 @@ class XarmOperator(Operator):
         self._station_timer = StationTimer(2, 0.01)
         self._log_timer = LogTimer(1)
 
-        self._scale_vector = np.array(scale_vector)
         self._P = [[1, 0, 0], [0, 0, 1], [0, 1, 0]]
 
         # filter ratio
@@ -180,6 +181,11 @@ class XarmOperator(Operator):
         # self.hand_init_H = self._turn_frame_to_homo_mat(first_hand_frame)
         # self.hand_init_t = copy(self.hand_init_H[:3, 3])
 
+        # wait for VR request
+        self._operation_response_socket.recv()
+        print("received! ")
+        self._operation_response_socket.send_string(f"{anchors_counts}")
+
         # for three anchor
         while anchors_counts < 3:
             # hand_frame = self._get_hand_frame()
@@ -194,12 +200,19 @@ class XarmOperator(Operator):
                 anchors_counts += 1
                 print(anchors_counts, anchors)
 
+                # send stage infomation
+                self._operation_response_socket.recv()
+                self._operation_response_socket.send_string(f"{anchors_counts}")
+
                 # init rotation matrix
                 # last hand position
-                if anchors_counts == 2:
+                if anchors_counts == 3:
                     self.hand_init_rotation = self._turn_frame_to_rotation_mat(
                         hand_frame
                     )
+                    # close _operation_response_socket
+                    self._operation_response_socket.recv()
+                    self._operation_response_socket.close()
 
             self._log_timer.trigger(
                 (

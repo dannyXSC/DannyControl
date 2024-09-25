@@ -1,4 +1,4 @@
-from src.utils.network import ZMQPayloadSubscriber
+from src.utils.network import ZMQPayloadSubscriber, ZMQStringSubscriber
 from src.utils.timer import FrequencyTimer
 from src.constants import *
 import h5py
@@ -22,6 +22,9 @@ class H5pyDumper(ABC):
 
     def init(self):
         self.data_dict = {}
+
+    def empty(self):
+        return len(self.data_dict)
 
     def _dict_append(self, target, source):
         # target source都是字典
@@ -50,13 +53,37 @@ class VROpH5pyDumper(H5pyDumper):
         super().__init__()
 
     def save(self, file_name, metadata=None):
-        pass
+        camera_key = "camera"
+        with open(file_name, "w") as file:
+            for key in self.data_dict.keys():
+                camera = file.create_group(camera_key)
+                if key == camera_key:
+                    for cam_name in self.data_dict[camera_key]:
+                        # TODO image shape
+                        camera.create_dataset(
+                            cam_name,
+                            data=self.self.data_dict[camera_key][cam_name],
+                            dtype="uint8",
+                            chunks=(1, 480, 640, 3),
+                        )
+                else:
+                    self.data_dict[key] = np.array(
+                        self.data_dict[key], dtype=np.float32
+                    )
+                    file.create_dataset(
+                        key,
+                        data=self.data_dict[key],
+                        compression="gzip",
+                        compression_opts=6,
+                    )
 
 
 class VROperationRecorder(object):
-    def __init__(self, listen_host, listen_port, save_path) -> None:
-        # TODO: 接收一些停止信号
-        self.payload_subscriber = VROpPayloadSubscriber(listen_host, listen_port)
+
+    def __init__(self, host, listen_port, switch_state_port, save_path) -> None:
+        self.payload_subscriber = VROpPayloadSubscriber(host, listen_port)
+        self.state_subscriber = ZMQStringSubscriber(host, switch_state_port, "state")
+
         self.timer = FrequencyTimer(RECORD_FREQ)
         self.h5py_dumper = H5pyDumper()
         self.save_path = save_path
@@ -66,9 +93,23 @@ class VROperationRecorder(object):
         return payload
 
     def stream(self):
+        cnt = 0
         while True:
             try:
                 self.timer.start_loop()
+
+                state = self.state_subscriber.recv_payload()
+                if state == STATUS_STOP:
+                    if not self.h5py_dumper.empty():
+                        target_path = os.path.join(
+                            f"{self.save_path}", f"episode_{cnt}.hdf5"
+                        )
+                        self.h5py_dumper.save(target_path)
+                        self.h5py_dumper.init()
+
+                        cnt += 1
+                    self.timer.end_loop()
+                    continue
 
                 payload = self._get_payload()
 
@@ -78,10 +119,8 @@ class VROperationRecorder(object):
                 self.h5py_dumper.add(payload)
 
                 self.timer.end_loop()
-            except:
+            except KeyboardInterrupt:
                 break
-
-        self.h5py_dumper.save(os.path.join(f"{self.save_path}", f"episode_{0}.hdf5"))
 
         self.payload_subscriber.stop()
 

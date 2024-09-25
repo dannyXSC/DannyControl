@@ -4,6 +4,7 @@ import zmq
 import pickle
 import numpy as np
 import base64
+from abc import ABC, abstractmethod
 
 
 class FrequencyTimer(object):
@@ -63,6 +64,20 @@ class StationTimer(object):
             return True
         else:
             return False
+
+
+class SwitchStationTimer(StationTimer):
+    def __init__(self, duration, threshold) -> None:
+        super().__init__(duration, threshold)
+        self.pre_state = 1
+
+    def _validation(self, state):
+        # if self.pre_state is not None:
+        #     print(np.linalg.norm(self.pre_state - state))
+
+        if state < self.threshold:
+            return True
+        return False
 
 
 class LogTimer(object):

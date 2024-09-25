@@ -2,12 +2,11 @@ robot_name: xarm
 
 # Detector used to teleoperate the robot
 detector:
-  _target_: src.components.detector.oculus.OculusVRHandDetector
+  _target_: src.components.detector.oculusbimanual.OculusVRTwoHandDetector
   host: ${host_address}
-  oculus_port: ${left_hand_receiver_port}
+  oculus_right_port: ${oculus_reciever_port}
+  oculus_left_port: ${left_hand_receiver_port}
   keypoint_pub_port: ${keypoint_port}
-  is_right: ${is_right}
-  log: ${log}
 
 # Transformation classes used to transform the keypoints
 transforms:
@@ -17,8 +16,23 @@ transforms:
     keypoint_port: ${keypoint_port}
     transformation_port: ${transformed_position_keypoint_port}
     moving_average_limit: 1
-    is_right: ${is_right}
+    is_right: True
     log: ${log}
+  -
+    _target_: src.components.detector.keypoint_transform.TransformHandPositionCoords
+    host: ${host_address}
+    keypoint_port: ${keypoint_port}
+    transformation_port: ${transformed_position_left_keypoint_port}
+    moving_average_limit: 1
+    is_right: False
+    log: ${log}
+
+transmitter:
+  - 
+    _target_: src.components.transmitter.switch.Switch
+    host: ${host_address}
+    transformed_right_keypoints_port: ${transformed_position_keypoint_port}
+    switch_state_port: ${switch_state_port}
 
 
 # Operators used to retarget the keypoints
@@ -26,12 +40,20 @@ operators:
   - 
     _target_: src.components.operators.xarm.XarmOperator
     host: ${host_address}
-    transformed_keypoints_port: ${transformed_position_keypoint_port}
+    transformed_keypoints_port: ${transformed_position_left_keypoint_port}
+    operation_stage_port: ${operation_stage_port}
     xarm_ip: '10.177.63.209'
-    scale_vector: [1000,1000,1000]
     comp_ratio: 0.5
     # log: True
-    is_right: ${is_right}
+
+recorder:
+  -
+    _target_: src.components.recorder.vr_operation.VROperationRecorder
+    host: ${host_address}
+    listen_port: #TODO:
+    switch_state_port: ${switch_state_port}
+    save_path: ""
+
 
 # List of controller classes used
 controllers:

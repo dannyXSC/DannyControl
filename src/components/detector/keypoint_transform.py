@@ -21,19 +21,19 @@ class TransformHandPositionCoords(Component):
         is_right=True,
         log=False,
     ):
-        self.notify_component_start("keypoint position transform")
-
         self.log = log
         self.is_right = is_right
 
         if is_right:
-            topic = "right"
+            self.topic = "right"
         else:
-            topic = "left"
+            self.topic = "left"
+
+        self.notify_component_start(f"keypoint position transform {self.topic}")
 
         # Initializing the subscriber for right hand keypoints
         self.original_keypoint_subscriber = ZMQKeypointSubscriber(
-            host, keypoint_port, topic
+            host, keypoint_port, self.topic
         )
         # Initializing the publisher for transformed right hand keypoints
         self.transformed_keypoint_publisher = ZMQKeypointPublisher(
@@ -118,11 +118,6 @@ class TransformHandPositionCoords(Component):
         cross_product = np.cross(palm_direction, palm_normal)
         # Unity space - X
 
-        if self.log:
-            if self.log_timer.validate():
-                self.log_timer.trigger()
-                print([origin_coord, -cross_product, palm_normal, palm_direction])
-
         return [origin_coord, -cross_product, palm_normal, palm_direction]
 
     def transform_keypoints(self, hand_coords):
@@ -160,6 +155,11 @@ class TransformHandPositionCoords(Component):
                 transformed_hand_coords, translated_hand_coord_frame = (
                     self.transform_keypoints(hand_coords)
                 )
+
+                if self.log:
+                    if self.log_timer.validate():
+                        self.log_timer.trigger()
+                        print(f"{self.topic}: {transformed_hand_coords}")
 
                 # Passing the transformed coords into a moving average
                 self.averaged_hand_coords = moving_average(

@@ -74,6 +74,9 @@ class TeleOperator(ProcessInstantiator):
         if "transforms" in configs.robot:
             self._init_keypoint_transform()
 
+        if "transmitter" in configs.robot:
+            self._init_transmitter()
+
         if configs.operate:
             self._init_operator()
 
@@ -82,6 +85,12 @@ class TeleOperator(ProcessInstantiator):
         self.processes.append(
             Process(target=_start_component, args=(self.configs.robot.detector,))
         )
+
+    def _init_transmitter(self):
+        for transmitter_config in self.configs.robot.transmitter:
+            self.processes.append(
+                Process(target=_start_component, args=(transmitter_config,))
+            )
 
     # Function to start the sim environment
     def _init_sim_environment(self):

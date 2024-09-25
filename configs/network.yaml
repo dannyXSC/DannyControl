@@ -1,17 +1,43 @@
+###################
+# HOST IP
+###################
 host_address: '10.177.63.71'
-left_xarm_ip: '192.168.86.216'
-right_xarm_ip: '192.168.86.230'
+xarm_ip: '10.177.63.209'
 
-# Transformation ports
-oculus_reciever_port: 8087
-left_hand_receiver_port: 8110
-keypoint_port: 8088
+
+###################
+# INNER PORT
+###################
+keypoint_port: 8098
 transformed_position_keypoint_port: 8089
 transformed_position_left_keypoint_port: 8099
 transformed_velocity_keypoint_port: 8090
+# operation stage publish port
+operation_stage_port: 8092
 
+###################
+# FOR VR
+###################
+oculus_reciever_port: 8087
+left_hand_receiver_port: 8110
 # Camera offsets
 cam_port_offset:  10005
+#switch publish port
+switch_state_port: 8091
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Graph stream
 oculus_graph_port: 15001
@@ -19,8 +45,8 @@ oculus_graph_port: 15001
 # Deployment port
 deployment_port: 10000
 
-pre_action_thumb_ee_position_port: 8091
-post_action_thumb_ee_position_port: 8092
+# pre_action_thumb_ee_position_port: 8091
+# post_action_thumb_ee_position_port: 8092
 
 sim_image_port: 10005
 

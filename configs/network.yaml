@@ -1,14 +1,16 @@
-host_address: '10.177.63.71'
+host_address: '10.162.196.203'
 left_xarm_ip: '192.168.86.216'
 right_xarm_ip: '192.168.86.230'
 
 # Transformation ports
-oculus_reciever_port: 8087
+oculus_receiver_port: 8087
 left_hand_receiver_port: 8110
 keypoint_port: 8088
 transformed_position_keypoint_port: 8089
 transformed_position_left_keypoint_port: 8099
 transformed_velocity_keypoint_port: 8090
+
+xarm_info_transmitter_port: 8094
 
 # Camera offsets
 cam_port_offset:  10005

@@ -9,10 +9,11 @@ from src.constants import *
 
 class RealsenseCamera(Component):
     def __init__(
-        self, stream_configs, cam_serial_num, cam_id, cam_configs, stream_oculus=False
+        self, stream_configs, cam_name, cam_serial_num, cam_id, cam_configs, stream_oculus=False
     ):
         # Disabling scientific notations
         np.set_printoptions(suppress=True)
+        self.cam_name = cam_name
         self.cam_id = cam_id
         self.cam_configs = cam_configs
         self._cam_serial_num = cam_serial_num

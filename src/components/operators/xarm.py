@@ -197,7 +197,7 @@ class XarmOperator(Operator):
                 print(f"final_pose_cart: {final_pose_cart}")
                 self.pre_time = cur_time
 
-        self.robot.move_coords(final_pose_cart, speed=300)
+        # self.robot.move_coords(final_pose_cart, speed=300)
 
         gripper_state = self.get_gripper_state()
         if gripper_state != self.gripper_state:

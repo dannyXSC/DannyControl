@@ -27,6 +27,7 @@ class XarmInfoNotifier(Component):
                     XarmInfo()
                     .set_joint_angle(self.robot.get_joint_position())
                     .set_end_position(self.robot.get_cartesian_position())
+                    .set_gripper_state(self.robot.get_gripper_state())
                 )
 
                 payload = xarm_info.to_json()
@@ -37,7 +38,8 @@ class XarmInfoNotifier(Component):
 
                 # End the timer
                 self.timer.end_loop()
-            except:
+            except Exception as e:
+                print(e)
                 break
 
         self.xarm_publisher.stop()

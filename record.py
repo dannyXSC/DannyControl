@@ -1,5 +1,5 @@
 import hydra
-from src.components import Recorder
+from src.components.record_initializer import Recorder
 
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="camera")

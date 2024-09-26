@@ -43,6 +43,7 @@ class VideoStreamer(object):
         data = raw_data.lstrip(b"rgb_image ")
         data = pickle.loads(data)
         encoded_rgb = np.frombuffer(base64.b64decode(data['rgb_image']), np.uint8)
+        decoded_rgb = cv2.imdecode(encoded_rgb, cv2.IMREAD_COLOR)
         timestamp = data['timestamp']
         # file_path = f'D:\project\project1\code\data\\time_{timestamp}.jpg'
         # with open(file_path, 'wb') as f:
@@ -53,7 +54,8 @@ class VideoStreamer(object):
         # image_tensor = self.transforms(image)
         # print(image_tensor.shape)
         # return encoded_rgb, timestamp
-        return encoded_rgb, self.get_cam_name()
+        # return encoded_rgb, self.get_cam_name()
+        return decoded_rgb, timestamp
 
     def process_frames(self):
 

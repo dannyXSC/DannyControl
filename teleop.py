@@ -1,6 +1,5 @@
 import hydra
-from src.components import TeleOperator
-import multiprocessing as mp
+from src.components.teleop_initializer import TeleOperator
 
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="teleop")

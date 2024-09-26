@@ -3,8 +3,6 @@ import hydra
 from abc import ABC
 from multiprocessing import Process
 
-from .sensors import *
-
 
 class ProcessInstantiator(ABC):
     def __init__(self, configs):
@@ -18,111 +16,7 @@ class ProcessInstantiator(ABC):
         return self.processes
 
 
-class RealsenseCameras(ProcessInstantiator):
-    """
-    Returns all the camera processes. Start the list of processes to start
-    the camera stream.
-    """
-
-    def __init__(self, configs):
-        super().__init__(configs)
-        # Creating all the camera processes
-        self._init_camera_processes()
-
-    def _start_component(
-        self,
-        cam_idx,
-        cam_name,
-        cam_serial_num,
-    ):
-        component = RealsenseCamera(
-            stream_configs=dict(
-                host=self.configs.host_address,
-                port=self.configs.cam_port_offset + cam_idx,
-            ),
-            cam_name=cam_name,
-            cam_serial_num=cam_serial_num,
-            cam_id=cam_idx + 1,
-            cam_configs=self.configs.cam_configs,
-            stream_oculus=True if self.configs.oculus_cam == cam_idx else False,
-        )
-        component.stream()
-
-    def _init_camera_processes(self):
-        camera_pairs = self.configs.robot_cam_serial_numbers
-        for cam_idx, pair in enumerate(camera_pairs):
-            for cam_name, cam_serial_num in pair.items():
-                self.processes.append(
-                    Process(
-                        target=self._start_component,
-                        args=(
-                            cam_idx,
-                            cam_name,
-                            cam_serial_num,
-                        ),
-                    )
-                )
-
-
 # Function to start the components
 def _start_component(configs):
     component = hydra.utils.instantiate(configs)
     component.stream()
-
-
-class TeleOperator(ProcessInstantiator):
-    """
-    Returns all the teleoperation processes. Start the list of processes
-    to run the teleop.
-    """
-
-    def __init__(self, configs):
-        super().__init__(configs)
-
-        # For Simulation environment start the environment as well
-        if configs.sim_env:
-            self._init_sim_environment()
-        # Start the Hand Detector
-        if "detector" in configs.robot:
-            self._init_detector()
-        # Start the keypoint transform
-        if "transforms" in configs.robot:
-            self._init_keypoint_transform()
-
-        if "transmitters" in configs.robot:
-            self._init_transmitter()
-
-        if configs.operate:
-            self._init_operator()
-
-    # Function to start the detector component
-    def _init_detector(self):
-        self.processes.append(
-            Process(target=_start_component, args=(self.configs.robot.detector,))
-        )
-
-    def _init_transmitter(self):
-        for transmitter_config in self.configs.robot.transmitters:
-            self.processes.append(
-                Process(target=_start_component, args=(transmitter_config,))
-            )
-
-    # Function to start the sim environment
-    def _init_sim_environment(self):
-        for env_config in self.configs.robot.environment:
-            self.processes.append(Process(target=_start_component, args=(env_config,)))
-
-    # Function to start the keypoint transform
-    def _init_keypoint_transform(self):
-        for transform_config in self.configs.robot.transforms:
-            self.processes.append(
-                Process(target=_start_component, args=(transform_config,))
-            )
-
-    # Function to start the operator
-    def _init_operator(self):
-        for operator_config in self.configs.robot.operators:
-
-            self.processes.append(
-                Process(target=_start_component, args=(operator_config,))
-            )

@@ -42,8 +42,10 @@ class VideoStreamer(object):
         data = pickle.loads(data)
 
         encoded_rgb = np.frombuffer(base64.b64decode(data["rgb_image"]), np.uint8)
+        decoded_rgb = cv2.imdecode(encoded_rgb, cv2.IMREAD_COLOR)
+
         # timestamp = data["timestamp"]
-        return encoded_rgb, self.get_cam_name()
+        return decoded_rgb, self.get_cam_name()
 
     def process_frames(self):
 

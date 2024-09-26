@@ -71,7 +71,7 @@ class VROpH5pyDumper(H5pyDumper):
                         camera.create_dataset(
                             cam_name,
                             data=self.data_dict[camera_key][cam_name],
-                            # chunks=(1, 3, 720, 1280),
+                            chunks=(1, 720, 1280, 3),
                             compression="gzip",
                             compression_opts=6,
                         )

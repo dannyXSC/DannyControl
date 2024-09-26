@@ -8,6 +8,6 @@ recorder:
   - 
     _target_: src.components.recorder.vr_operation.VROperationRecorder
     host: ${host_address}
-    listen_port: #TODO:
+    listen_port: ${xarm_info_transmitter_port}
     switch_state_port: ${switch_state_port}
     save_path: ""

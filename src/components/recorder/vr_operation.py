@@ -1,4 +1,8 @@
-from src.utils.network import ZMQPayloadSubscriber, ZMQStringSubscriber
+from src.utils.network import (
+    ZMQPayloadSubscriber,
+    ZMQStringSubscriber,
+    ZMQKeypointSubscriber,
+)
 from src.utils.timer import FrequencyTimer
 from src.constants import *
 import h5py
@@ -53,7 +57,7 @@ class VROpH5pyDumper(H5pyDumper):
         super().__init__()
 
     def save(self, file_name, metadata=None):
-        camera_key = "camera"
+        camera_key = "cam_data"
         with open(file_name, "w") as file:
             for key in self.data_dict.keys():
                 camera = file.create_group(camera_key)
@@ -71,6 +75,14 @@ class VROpH5pyDumper(H5pyDumper):
                             compression="gzip",
                             compression_opts=6,
                         )
+                elif key == "step":
+                    self.data_dict[key] = np.array(self.data_dict[key], dtype=np.int64)
+                    file.create_dataset(
+                        key,
+                        data=self.data_dict[key],
+                        compression="gzip",
+                        compression_opts=6,
+                    )
                 else:
                     self.data_dict[key] = np.array(
                         self.data_dict[key], dtype=np.float32
@@ -86,15 +98,17 @@ class VROpH5pyDumper(H5pyDumper):
 class VROperationRecorder(object):
 
     def __init__(self, host, listen_port, switch_state_port, save_path) -> None:
-        self.payload_subscriber = VROpPayloadSubscriber(host, listen_port)
+        self.payload_subscriber = ZMQKeypointSubscriber(
+            host, listen_port, XARM_NOTIFIER_TOPIC
+        )
         self.state_subscriber = ZMQStringSubscriber(host, switch_state_port, "state")
 
-        self.timer = FrequencyTimer(RECORD_FREQ)
+        self.timer = FrequencyTimer(TRANS_FREQ)
         self.h5py_dumper = H5pyDumper()
         self.save_path = save_path
 
     def _get_payload(self):
-        payload = self.payload_subscriber.recv_payload()
+        payload = self.payload_subscriber.recv_keypoints()
         return payload
 
     def stream(self):
@@ -117,6 +131,8 @@ class VROperationRecorder(object):
                     continue
 
                 payload = self._get_payload()
+
+                print(payload)
 
                 # 调整payload的格式
 

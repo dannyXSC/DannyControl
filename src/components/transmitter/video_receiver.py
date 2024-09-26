@@ -11,15 +11,15 @@ from PIL import Image
 import datetime
 import json
 
+
 class VideoStreamer(object):
     def __init__(self, host, cam_port, height, width, cam_name, serial_num):
         self._init_socket(host, cam_port)
         self.height = height
         self.width = width
-        self.transforms = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.ToTensor()
-        ])
+        self.transforms = transforms.Compose(
+            [transforms.ToPILImage(), transforms.ToTensor()]
+        )
         self.cam_name = cam_name
         self.serial_num = serial_num
 
@@ -36,23 +36,13 @@ class VideoStreamer(object):
         self.socket.connect("tcp://{}:{}".format(host, port))
         self.socket.setsockopt(zmq.SUBSCRIBE, b"rgb_image")
 
-
-    @hydra.main(version_base="1.2", config_path="configs", config_name="camera")
     def get_image_tensor(self):
         raw_data = self.socket.recv()
         data = raw_data.lstrip(b"rgb_image ")
         data = pickle.loads(data)
-        encoded_rgb = np.frombuffer(base64.b64decode(data['rgb_image']), np.uint8)
-        timestamp = data['timestamp']
-        # file_path = f'D:\project\project1\code\data\\time_{timestamp}.jpg'
-        # with open(file_path, 'wb') as f:
-        #     f.write(encoded_rgb)
-        # print(f"Image saved to: {file_path}")
-        # image = Image.open(file_path)
-        # image = np.array(image)
-        # image_tensor = self.transforms(image)
-        # print(image_tensor.shape)
-        # return encoded_rgb, timestamp
+
+        encoded_rgb = np.frombuffer(base64.b64decode(data["rgb_image"]), np.uint8)
+        # timestamp = data["timestamp"]
         return encoded_rgb, self.get_cam_name()
 
     def process_frames(self):
@@ -61,14 +51,15 @@ class VideoStreamer(object):
         image_data = {
             "encoded_rgb": image_tensor.tolist(),
             # "encoded_depth": encoded_depth.tolist(),
-            "timestamp": timestamp
+            "timestamp": timestamp,
         }
-        json_file_path =f'D:\project\project1\code\data\\visual\\time_{timestamp}.json'
+        json_file_path = f"D:\project\project1\code\data\\visual\\time_{timestamp}.json"
         with open(json_file_path, "w") as json_file:
             json.dump(image_data, json_file)
         print(f"Image data saved to: {json_file_path}")
         print("Timestamp:", timestamp)
         print("Image shape:", image_tensor.shape)
+
 
 class VideoReceiver(object):
     def __init__(self, configs):
@@ -81,13 +72,13 @@ class VideoReceiver(object):
         # self.robot_cam_serial_numbers = configs.robot_cam_serial_numbers
         self.camera_pairs = configs.robot_cam_serial_numbers
 
-        # Initializing the streamers        
+        # Initializing the streamers
         self._init_cam_streamers()
         self._init_graph_streamer()
 
         # Initializing frequency checkers
         self._init_frequency_checkers()
-        
+
     def _init_graph_streamer(self):
         # TODO
         pass
@@ -107,8 +98,8 @@ class VideoReceiver(object):
                         cam_port=self.port_offset + cam_idx,
                         height=self.image_height,
                         width=self.image_width,
-                        cam_name = cam_name,
-                        serial_num=cam_serial_num
+                        cam_name=cam_name,
+                        serial_num=cam_serial_num,
                     )
                 )
         # for idx, serial_number in enumerate(self.robot_cam_serial_numbers):

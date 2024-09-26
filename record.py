@@ -2,7 +2,7 @@ import hydra
 from src.components.record_initializer import Recorder
 
 
-@hydra.main(version_base="1.2", config_path="configs", config_name="camera")
+@hydra.main(version_base="1.2", config_path="configs", config_name="recorder")
 def main(configs):
     recorder = Recorder(configs)
     processes = recorder.get_processes()

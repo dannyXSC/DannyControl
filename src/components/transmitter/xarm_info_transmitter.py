@@ -52,18 +52,14 @@ class XarmInfoNotifier(Component):
                     self._transformed_hand_keypoint_subscriber.recv_keypoints()
                 )
                 end_position = self.robot.get_cartesian_position()
-                cam_data = []
+                cam_data = {}
                 timestamp = time.time()
                 for id in range(self.configs.num_cams):
                     rgb_data, cam_name = self.video_receiver.get_cam_streamer(
                         id
                     ).get_image_tensor()
 
-                    cam_data.append(
-                        {
-                            cam_name: rgb_data,
-                        }
-                    )
+                    cam_data[cam_name] = rgb_data
 
                 payload["step"] = step
                 payload["timestamp"] = timestamp

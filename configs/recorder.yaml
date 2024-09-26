@@ -10,4 +10,4 @@ recorder:
     host: ${host_address}
     listen_port: ${xarm_info_transmitter_port}
     switch_state_port: ${switch_state_port}
-    save_path: ""
+    save_path: "./dataset"

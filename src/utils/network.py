@@ -345,7 +345,7 @@ class ZMQStringSubscriber(object):
         self.socket = self.context.socket(zmq.SUB)
         self.socket.setsockopt(zmq.CONFLATE, 1)
         self.socket.connect("tcp://{}:{}".format(self._host, self._port))
-        self.socket.setsockopt(zmq.SUBSCRIBE, self._topic)
+        self.socket.setsockopt_string(zmq.SUBSCRIBE, self._topic)
 
     def recv_payload(self):
         raw_data = self.socket.recv_string()

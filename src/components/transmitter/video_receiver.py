@@ -8,9 +8,11 @@ import time
 import cv2
 import os
 from PIL import Image
+import datetime
+import json
 
 class VideoStreamer(object):
-    def __init__(self, host, cam_port, height, width):
+    def __init__(self, host, cam_port, height, width, cam_name, serial_num):
         self._init_socket(host, cam_port)
         self.height = height
         self.width = width
@@ -18,6 +20,14 @@ class VideoStreamer(object):
             transforms.ToPILImage(),
             transforms.ToTensor()
         ])
+        self.cam_name = cam_name
+        self.serial_num = serial_num
+
+    def get_cam_name(self):
+        return self.cam_name
+
+    def get_serial_num(self):
+        return self.serial_num
 
     def _init_socket(self, host, port):
         self.context = zmq.Context()
@@ -28,40 +38,48 @@ class VideoStreamer(object):
 
 
     @hydra.main(version_base="1.2", config_path="configs", config_name="camera")
-    def _get_image_tensor(self):
+    def get_image_tensor(self):
         raw_data = self.socket.recv()
         data = raw_data.lstrip(b"rgb_image ")
         data = pickle.loads(data)
-        encoded_data = np.frombuffer(base64.b64decode(data['rgb_image']), np.uint8)
+        encoded_rgb = np.frombuffer(base64.b64decode(data['rgb_image']), np.uint8)
         timestamp = data['timestamp']
-        # image = cv2.imencode('.jpg', encoded_data)[1].tostring()
-        file_path = f'D:\project\project1\code\data\\time_{timestamp}.jpg'
-        with open(file_path, 'wb') as f:
-            f.write(encoded_data)
-        print(f"Image saved to: {file_path}")
+        # file_path = f'D:\project\project1\code\data\\time_{timestamp}.jpg'
+        # with open(file_path, 'wb') as f:
+        #     f.write(encoded_rgb)
+        # print(f"Image saved to: {file_path}")
+        # image = Image.open(file_path)
+        # image = np.array(image)
+        # image_tensor = self.transforms(image)
+        # print(image_tensor.shape)
+        # return encoded_rgb, timestamp
+        return encoded_rgb, self.get_cam_name()
 
-        image = Image.open(file_path)
-        image = np.array(image)
-        image_tensor = self.transforms(image) 
-        timestamp = time.time()
-        
-        return image_tensor, timestamp
-    
     def process_frames(self):
-        while True:
-            image_tensor, timestamp = self._get_image_tensor()
-            print("Timestamp:", timestamp)
-            print("Image shape:", image_tensor.shape)
 
-class ReceiverApplication(object):
+        image_tensor, timestamp = self._get_image_tensor()
+        image_data = {
+            "encoded_rgb": image_tensor.tolist(),
+            # "encoded_depth": encoded_depth.tolist(),
+            "timestamp": timestamp
+        }
+        json_file_path =f'D:\project\project1\code\data\\visual\\time_{timestamp}.json'
+        with open(json_file_path, "w") as json_file:
+            json.dump(image_data, json_file)
+        print(f"Image data saved to: {json_file_path}")
+        print("Timestamp:", timestamp)
+        print("Image shape:", image_tensor.shape)
+
+class VideoReceiver(object):
     def __init__(self, configs):
         # Loading the network configurations
         self.host_address = configs.host_address
-        self.keypoint_port = configs.keypoint_port
         self.port_offset = configs.cam_port_offset
         self.num_cams = len(configs.robot_cam_serial_numbers)
         self.image_height = configs.cam_configs.height
         self.image_width = configs.cam_configs.width
+        # self.robot_cam_serial_numbers = configs.robot_cam_serial_numbers
+        self.camera_pairs = configs.robot_cam_serial_numbers
 
         # Initializing the streamers        
         self._init_cam_streamers()
@@ -81,15 +99,38 @@ class ReceiverApplication(object):
 
     def _init_cam_streamers(self):
         self.cam_streamers = []
-        for idx in range(self.num_cams):
-            self.cam_streamers.append(
-                VideoStreamer(
-                    host = self.host_address,
-                    cam_port = self.port_offset + idx, 
-                    height = self.image_height,
-                    width = self.image_width
+        for cam_idx, pair in enumerate(self.camera_pairs):
+            for cam_name, cam_serial_num in pair.items():
+                self.cam_streamers.append(
+                    VideoStreamer(
+                        host=self.host_address,
+                        cam_port=self.port_offset + cam_idx,
+                        height=self.image_height,
+                        width=self.image_width,
+                        cam_name = cam_name,
+                        serial_num=cam_serial_num
+                    )
                 )
-            )
+        # for idx, serial_number in enumerate(self.robot_cam_serial_numbers):
+        #     self.cam_streamers.append(
+        #         VideoStreamer(
+        #             host = self.host_address,
+        #             cam_port = self.port_offset + idx,
+        #             height = self.image_height,
+        #             width = self.image_width,
+        #             serial_num = serial_number
+        #         )
+        #     )
+        #
+        # for idx in range(self.num_cams):
+        #     self.cam_streamers.append(
+        #         VideoStreamer(
+        #             host = self.host_address,
+        #             cam_port = self.port_offset + idx,
+        #             height = self.image_height,
+        #             width = self.image_width
+        #         )
+        #     )
 
     def get_cam_streamer(self, id):
         return self.cam_streamers[id - 1]

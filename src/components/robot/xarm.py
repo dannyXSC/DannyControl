@@ -93,6 +93,9 @@ class Xarm(RobotWrapper):
     def get_joint_torque(self) -> np.ndarray:
         return np.array(self._controller.get_joints_torque()[1], dtype=np.float32)
 
+    def get_gripper_state(self) -> int:
+        return 0 if (self._controller.get_gripper_position()[1]<800) else 1
+
     def home(self):
         self.move_coords(XARM_HOME_VALUES)
 

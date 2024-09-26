@@ -28,6 +28,7 @@ OCULUS_VIEW_LIMITS = {
     "z_limits": [-0.04, 0.04],
 }
 
+# TODO: check frequency
 RECORD_FREQ = 20
 VR_FREQ = 60
 BIMANUAL_VR_FREQ = 90

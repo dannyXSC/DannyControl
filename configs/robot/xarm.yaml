@@ -46,6 +46,16 @@ operators:
     comp_ratio: 0.5
     # log: True
 
+transmitters:
+  -
+    _target_: src.components.transmitter.xarm_info_transmitter.XarmInfoNotifier
+    host: ${host_address}
+    xarm_info_transmitter_port: ${xarm_info_transmitter_port}
+    transformed_position_keypoint_port: ${transformed_position_keypoint_port}
+    xarm_ip: '10.177.63.209'
+    scale_vector: [300,300,500]
+    comp_ratio: 0.5
+
 # List of controller classes used
 controllers:
   -

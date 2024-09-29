@@ -11,3 +11,4 @@ recorder:
     listen_port: ${xarm_info_transmitter_port}
     switch_state_port: ${switch_state_port}
     save_path: ""
+    record_varify_port: ${record_varify_port}

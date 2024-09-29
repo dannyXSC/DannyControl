@@ -32,7 +32,7 @@ class XarmInfoNotifier(Component):
         self.xarm_publisher = ZMQKeypointPublisher(host, xarm_info_transmitter_port)
         self.robot = Xarm(xarm_ip)
 
-        self.timer = FrequencyTimer(TRANS_FREQ)
+        self.timer = FrequencyTimer(VR_FREQ)
 
     def stream(self):
         step = 0
@@ -86,13 +86,3 @@ class XarmInfoNotifier(Component):
         self.xarm_publisher.stop()
         self.robot.stop()
         print("Stopping the xarm notifier process.")
-
-
-class XarmInfoReceiver(object):
-    def __init__(self, host, port):
-        self.xarm_subscriber = ZMQKeypointSubscriber(host, port, XARM_NOTIFIER_TOPIC)
-
-    def get_info(self):
-        payload = self.xarm_subscriber.recv_keypoints()
-        data = XarmInfo().from_json(payload)
-        return data

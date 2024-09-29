@@ -68,11 +68,11 @@ class VideoReceiver(object):
         # Loading the network configurations
         self.host_address = configs.host_address
         self.port_offset = configs.cam_port_offset
-        self.num_cams = len(configs.robot_cam_serial_numbers)
+        self.num_cams = len(configs.camera_info)
         self.image_height = configs.cam_configs.height
         self.image_width = configs.cam_configs.width
         # self.robot_cam_serial_numbers = configs.robot_cam_serial_numbers
-        self.camera_pairs = configs.robot_cam_serial_numbers
+        self.camera_pairs = configs.camera_info
 
         # Initializing the streamers
         self._init_cam_streamers()
@@ -93,37 +93,18 @@ class VideoReceiver(object):
     def _init_cam_streamers(self):
         self.cam_streamers = []
         for cam_idx, pair in enumerate(self.camera_pairs):
-            for cam_name, cam_serial_num in pair.items():
-                self.cam_streamers.append(
-                    VideoStreamer(
-                        host=self.host_address,
-                        cam_port=self.port_offset + cam_idx,
-                        height=self.image_height,
-                        width=self.image_width,
-                        cam_name=cam_name,
-                        serial_num=cam_serial_num,
-                    )
+            cam_name = pair.name
+            cam_serial_num = pair.serial_number
+            self.cam_streamers.append(
+                VideoStreamer(
+                    host=self.host_address,
+                    cam_port=self.port_offset + cam_idx,
+                    height=self.image_height,
+                    width=self.image_width,
+                    cam_name=cam_name,
+                    serial_num=cam_serial_num,
                 )
-        # for idx, serial_number in enumerate(self.robot_cam_serial_numbers):
-        #     self.cam_streamers.append(
-        #         VideoStreamer(
-        #             host = self.host_address,
-        #             cam_port = self.port_offset + idx,
-        #             height = self.image_height,
-        #             width = self.image_width,
-        #             serial_num = serial_number
-        #         )
-        #     )
-        #
-        # for idx in range(self.num_cams):
-        #     self.cam_streamers.append(
-        #         VideoStreamer(
-        #             host = self.host_address,
-        #             cam_port = self.port_offset + idx,
-        #             height = self.image_height,
-        #             width = self.image_width
-        #         )
-        #     )
+            )
 
     def get_cam_streamer(self, id):
         return self.cam_streamers[id - 1]

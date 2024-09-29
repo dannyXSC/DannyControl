@@ -2,6 +2,7 @@ from src.utils.network import (
     ZMQPayloadSubscriber,
     ZMQStringSubscriber,
     ZMQKeypointSubscriber,
+    create_request_socket,
 )
 from src.utils.timer import FrequencyTimer
 from src.constants import *
@@ -71,7 +72,7 @@ class VROpH5pyDumper(H5pyDumper):
                         camera.create_dataset(
                             cam_name,
                             data=self.data_dict[camera_key][cam_name],
-                            chunks=(1, 720, 1280, 3),
+                            chunks=(1, 240, 426, 3),
                             compression="gzip",
                             compression_opts=6,
                         )
@@ -97,13 +98,17 @@ class VROpH5pyDumper(H5pyDumper):
 
 class VROperationRecorder(object):
 
-    def __init__(self, host, listen_port, switch_state_port, save_path) -> None:
+    def __init__(
+        self, host, listen_port, switch_state_port, record_varify_port, save_path
+    ) -> None:
         self.payload_subscriber = ZMQKeypointSubscriber(
             host, listen_port, XARM_NOTIFIER_TOPIC
         )
         self.state_subscriber = ZMQStringSubscriber(host, switch_state_port, "state")
 
-        self.timer = FrequencyTimer(TRANS_FREQ)
+        self.record_varify_socket = create_request_socket(host, record_varify_port)
+
+        self.timer = FrequencyTimer(RECORD_FREQ)
         self.h5py_dumper = H5pyDumper()
         self.save_path = save_path
 
@@ -125,14 +130,14 @@ class VROperationRecorder(object):
                         )
                         self.h5py_dumper.save(target_path)
                         self.h5py_dumper.init()
+                        self.record_varify_socket.send(b"")
+                        self.record_varify_socket.recv()
 
                         cnt += 1
                     self.timer.end_loop()
                     continue
 
                 payload = self._get_payload()
-
-                print(payload)
 
                 # 调整payload的格式
 
@@ -144,5 +149,6 @@ class VROperationRecorder(object):
                 break
 
         self.payload_subscriber.stop()
+        self.record_varify_socket.close()
 
         print("Stopping the recorder.")

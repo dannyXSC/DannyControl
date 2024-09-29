@@ -15,7 +15,7 @@ transformed_velocity_keypoint_port: 8090
 # operation stage publish port
 operation_stage_port: 8092
 xarm_info_transmitter_port: 8094
-
+record_varify_port: 8095
 
 
 ###################
@@ -55,7 +55,7 @@ sim_image_port: 10005
 
 fish_eye_cam_port_offset: 10010
 
-resolution_button_port: 8095
+# resolution_button_port: 8095
 resolution_button_publish_port: 8093
 teleop_reset_port: 8100
 teleop_reset_publish_port: 8102

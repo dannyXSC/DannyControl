@@ -1,22 +1,20 @@
-from src.utils.network import *
+from src.components.sensors.realsense import RealsenseHamal
+from src.components.transmitter.video_receiver import VideoReceiver
+import hydra
+from src.utils.timer import LogTimer
 import time
-import traceback
 
+hydra.initialize(config_path="./configs", version_base="1.2")
+configs = hydra.compose("server")
+video_receiver = VideoReceiver(configs)
 
-def main():
-    context = zmq.Context()
-    socket = context.socket(zmq.PUSH)
-    socket.connect("tcp://10.162.189.83:8087")
-    while True:
-        try:
-            topic_name = "right_hand"
-            buffer = pickle.dumps([0, 1, 0, 0, 1, 0, 0, 1, 0, 0], protocol=-1)
-            socket.send(bytes("{} ".format(topic_name), "utf-8") + buffer)
-            print(buffer)
-            time.sleep(1)
-        except:
-            traceback.print_exc()
-            break
+logger = LogTimer(1)
 
-
-main()
+start_time = time.time()
+cnt = 0
+while True:
+    for id in range(configs.num_cams):
+        rgb_data, cam_name = video_receiver.get_cam_streamer(id).get_image_tensor()
+        cnt += 1
+        duration = time.time() - start_time
+        logger.trigger(f"frequency: {cnt/(duration)}")

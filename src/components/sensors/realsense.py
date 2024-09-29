@@ -7,9 +7,87 @@ from src.utils.network import ZMQCameraPublisher, ZMQCompressedImageTransmitter
 from src.constants import *
 
 
+class RealsenseHamal(object):
+
+    def __init__(self, cam_serial_num, width, height, fps, processing_preset=1):
+        self.cam_serial_num = cam_serial_num
+        self.width = width
+        self.height = height
+        self.fps = fps
+        self.processing_preset = processing_preset
+
+        config = rs.config()
+        self.pipeline = rs.pipeline()
+        config.enable_device(cam_serial_num)
+
+        # Enabling camera streams
+        config.enable_stream(
+            rs.stream.color,
+            width,
+            height,
+            rs.format.bgr8,
+            fps,
+        )
+        config.enable_stream(
+            rs.stream.depth,
+            width,
+            height,
+            rs.format.z16,
+            fps,
+        )
+
+        # Starting the pipeline
+        cfg = self.pipeline.start(config)
+        device = cfg.get_device()
+
+        # Setting the depth mode to high accuracy mode
+        depth_sensor = device.first_depth_sensor()
+        depth_sensor.set_option(rs.option.visual_preset, processing_preset)
+        self.realsense = self.pipeline
+
+        # Obtaining the color intrinsics matrix for aligning the color and depth images
+        profile = self.pipeline.get_active_profile()
+        color_profile = rs.video_stream_profile(profile.get_stream(rs.stream.color))
+        intrinsics = color_profile.get_intrinsics()
+        self.intrinsics_matrix = np.array(
+            [
+                [intrinsics.fx, 0, intrinsics.ppx],
+                [0, intrinsics.fy, intrinsics.ppy],
+                [0, 0, 1],
+            ]
+        )
+
+        # Align function - aligns other frames with the color frame
+        self.align = rs.align(rs.stream.color)
+
+    def get_rgb_depth_images(self):
+        frames = None
+
+        while frames is None:
+            # Obtaining and aligning the frames
+            frames = self.realsense.wait_for_frames()
+            aligned_frames = self.align.process(frames)
+
+            depth_frame = aligned_frames.get_depth_frame()
+            color_frame = aligned_frames.get_color_frame()
+
+            # Getting the images from the frames
+            depth_image = np.asanyarray(depth_frame.get_data())
+            color_image = np.asanyarray(color_frame.get_data())
+
+        return color_image, depth_image, frames.get_timestamp()
+
+
 class RealsenseCamera(Component):
     def __init__(
-        self, stream_configs, cam_name, cam_serial_num, cam_id, cam_configs, stream_oculus=False
+        self,
+        stream_configs,
+        cam_name,
+        cam_serial_num,
+        cam_id,
+        cam_configs,
+        stream_rescale_factor=4,
+        stream_oculus=False,
     ):
         # Disabling scientific notations
         np.set_printoptions(suppress=True)
@@ -19,6 +97,7 @@ class RealsenseCamera(Component):
         self._cam_serial_num = cam_serial_num
         self._stream_configs = stream_configs
         self._stream_oculus = stream_oculus
+        self.stream_rescale_factor = stream_rescale_factor
 
         # Different publishers to avoid overload
         self.rgb_publisher = ZMQCameraPublisher(
@@ -121,6 +200,8 @@ class RealsenseCamera(Component):
                 )
             )
 
+        cnt = 1
+
         while True:
             try:
                 self.timer.start_loop()
@@ -128,6 +209,10 @@ class RealsenseCamera(Component):
 
                 color_image = rotate_image(color_image, self.cam_configs.rotation_angle)
                 depth_image = rotate_image(depth_image, self.cam_configs.rotation_angle)
+
+                # rescale the image
+                color_image = rescale_image(color_image, self.stream_rescale_factor)
+                depth_image = rescale_image(depth_image, self.stream_rescale_factor)
 
                 # Publishing the rgb images
                 self.rgb_publisher.pub_rgb_image(color_image, timestamp)

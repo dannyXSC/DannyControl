@@ -33,6 +33,7 @@ transmitters:
     host: ${host_address}
     transformed_right_keypoints_port: ${transformed_position_keypoint_port}
     switch_state_port: ${switch_state_port}
+    record_varify_port: ${record_varify_port}
   -
     _target_: src.components.transmitter.xarm_info_transmitter.XarmInfoNotifier
     host: ${host_address}

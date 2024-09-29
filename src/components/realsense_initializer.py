@@ -23,6 +23,7 @@ class RealsenseCameras(ProcessInstantiator):
         cam_idx,
         cam_name,
         cam_serial_num,
+        stream_rescale_factor,
     ):
         component = RealsenseCamera(
             stream_configs=dict(
@@ -34,20 +35,19 @@ class RealsenseCameras(ProcessInstantiator):
             cam_id=cam_idx + 1,
             cam_configs=self.configs.cam_configs,
             stream_oculus=True if self.configs.oculus_cam == cam_idx else False,
+            stream_rescale_factor=stream_rescale_factor,
         )
         component.stream()
 
     def _init_camera_processes(self):
-        camera_pairs = self.configs.robot_cam_serial_numbers
+        camera_pairs = self.configs.camera_info
         for cam_idx, pair in enumerate(camera_pairs):
-            for cam_name, cam_serial_num in pair.items():
-                self.processes.append(
-                    Process(
-                        target=self._start_component,
-                        args=(
-                            cam_idx,
-                            cam_name,
-                            cam_serial_num,
-                        ),
-                    )
+            cam_name = pair.name
+            cam_serial_num = pair.serial_number
+            cam_stream_rescale_factor = pair.stream_rescale_factor
+            self.processes.append(
+                Process(
+                    target=self._start_component,
+                    args=(cam_idx, cam_name, cam_serial_num, cam_stream_rescale_factor),
                 )
+            )

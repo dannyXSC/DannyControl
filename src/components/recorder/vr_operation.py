@@ -66,9 +66,9 @@ class VROpH5pyDumper(H5pyDumper):
                 if key == camera_key:
                     for cam_name in self.data_dict[camera_key]:
                         # TODO image shape
-                        # self.data_dict[camera_key][cam_name] = np.array(
-                        #     self.data_dict[camera_key][cam_name], dtype=np.uint16
-                        # )
+                        self.data_dict[camera_key][cam_name] = np.array(
+                            self.data_dict[camera_key][cam_name], dtype=np.uint16
+                        )
                         camera.create_dataset(
                             cam_name,
                             data=self.data_dict[camera_key][cam_name],
@@ -94,6 +94,7 @@ class VROpH5pyDumper(H5pyDumper):
                         compression="gzip",
                         compression_opts=6,
                     )
+        print("H5py saving complete!")
 
 
 class VROperationRecorder(Component):
@@ -104,7 +105,7 @@ class VROperationRecorder(Component):
         )
         self.state_subscriber = ZMQStringSubscriber(host, switch_state_port, "state")
 
-        self.timer = FrequencyTimer(TRANS_FREQ)
+        self.timer = FrequencyTimer(RECORD_FREQ)
         self.h5py_dumper = VROpH5pyDumper()
         self.save_path = save_path
 
@@ -134,9 +135,6 @@ class VROperationRecorder(Component):
                     continue
 
                 payload = self._get_payload()
-                print(payload['cam_data']['robot_camera'])
-                print(type(payload['cam_data']['robot_camera']))
-                print(payload['cam_data']['robot_camera'].shape)
 
 
                 # 调整payload的格式

@@ -10,6 +10,7 @@ import h5py
 import numpy as np
 from abc import ABC, abstractmethod
 import os
+from src.components import Component
 
 
 class VROpPayloadSubscriber(ZMQPayloadSubscriber):
@@ -29,7 +30,7 @@ class H5pyDumper(ABC):
         self.data_dict = {}
 
     def empty(self):
-        return len(self.data_dict)
+        return len(self.data_dict) == 0
 
     def _dict_append(self, target, source):
         # target source都是字典
@@ -59,16 +60,16 @@ class VROpH5pyDumper(H5pyDumper):
 
     def save(self, file_name, metadata=None):
         camera_key = "cam_data"
-        with open(file_name, "w") as file:
+        with h5py.File(file_name, "w") as file:
+            camera = file.create_group(camera_key)
+
             for key in self.data_dict.keys():
-                camera = file.create_group(camera_key)
                 if key == camera_key:
                     for cam_name in self.data_dict[camera_key]:
                         # TODO image shape
                         self.data_dict[camera_key][cam_name] = np.array(
                             self.data_dict[camera_key][cam_name], dtype=np.uint16
                         )
-                        print(self.data_dict[camera_key][cam_name].shape)
                         camera.create_dataset(
                             cam_name,
                             data=self.data_dict[camera_key][cam_name],
@@ -94,9 +95,10 @@ class VROpH5pyDumper(H5pyDumper):
                         compression="gzip",
                         compression_opts=6,
                     )
+        print("H5py saving complete!")
 
 
-class VROperationRecorder(object):
+class VROperationRecorder(Component):
 
     def __init__(
         self, host, listen_port, switch_state_port, record_varify_port, save_path
@@ -109,7 +111,7 @@ class VROperationRecorder(object):
         self.record_varify_socket = create_request_socket(host, record_varify_port)
 
         self.timer = FrequencyTimer(RECORD_FREQ)
-        self.h5py_dumper = H5pyDumper()
+        self.h5py_dumper = VROpH5pyDumper()
         self.save_path = save_path
 
     def _get_payload(self):
@@ -117,12 +119,14 @@ class VROperationRecorder(object):
         return payload
 
     def stream(self):
+        self.notify_component_start("VROperationRecorder")
         cnt = 0
         while True:
             try:
                 self.timer.start_loop()
 
                 state = self.state_subscriber.recv_payload()
+
                 if state == STATUS_STOP:
                     if not self.h5py_dumper.empty():
                         target_path = os.path.join(

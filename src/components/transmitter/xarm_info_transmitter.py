@@ -1,5 +1,5 @@
 from src.components import Component
-from src.utils.timer import FrequencyTimer
+from src.utils.timer import FrequencyTimer, LogTimer
 from src.constants import *
 from src.utils.network import ZMQKeypointPublisher, ZMQKeypointSubscriber
 from src.components.robot.xarm import Xarm
@@ -36,6 +36,7 @@ class XarmInfoNotifier(Component):
 
     def stream(self):
         step = 0
+        logger = LogTimer(1)
         while True:
             if self.robot.if_shutdown():
                 continue
@@ -52,6 +53,10 @@ class XarmInfoNotifier(Component):
                     self._transformed_hand_keypoint_subscriber.recv_keypoints()
                 )
                 end_position = self.robot.get_cartesian_position()
+
+                if step == 0:
+                    start_time = time.time()
+
                 cam_data = {}
                 timestamp = time.time()
                 for id in range(self.configs.num_cams):
@@ -76,6 +81,8 @@ class XarmInfoNotifier(Component):
                 # End the timer
                 self.timer.end_loop()
                 step += 1
+
+                # logger.trigger(f"{step/(time.time()-start_time)}")
 
             except Exception as e:
                 print(e)

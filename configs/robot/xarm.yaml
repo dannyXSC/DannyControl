@@ -31,13 +31,13 @@ transmitters:
   - 
     _target_: src.components.transmitter.switch.Switch
     host: ${host_address}
-    transformed_right_keypoints_port: ${transformed_position_keypoint_port}
+    transformed_right_keypoints_port: ${transformed_position_left_keypoint_port}
     switch_state_port: ${switch_state_port}
     record_varify_port: ${record_varify_port}
   -
     _target_: src.components.transmitter.xarm_info_transmitter.XarmInfoNotifier
     host: ${host_address}
-    transformation_port: ${transformed_position_left_keypoint_port}
+    transformation_port: ${transformed_position_keypoint_port}
     xarm_info_transmitter_port: ${xarm_info_transmitter_port}
     xarm_ip: ${xarm_ip}
 
@@ -47,7 +47,7 @@ operators:
   - 
     _target_: src.components.operators.xarm.XarmOperator
     host: ${host_address}
-    transformed_keypoints_port: ${transformed_position_left_keypoint_port}
+    transformed_keypoints_port: ${xarm_info_transmitter_port}
     operation_stage_port: ${operation_stage_port}
     xarm_ip:  ${xarm_ip}
     comp_ratio: 0.5

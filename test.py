@@ -1,20 +1,26 @@
-from src.components.sensors.realsense import RealsenseHamal
-from src.components.transmitter.video_receiver import VideoReceiver
-import hydra
-from src.utils.timer import LogTimer
+from concurrent.futures import ThreadPoolExecutor, as_completed
+ 
 import time
+ 
+# 参数times用来模拟网络请求的时间
+ 
+def get_html(times):
+ 
+    time.sleep(times)
+    print("get page {}s finished".format(times))
+    return times
+executor = ThreadPoolExecutor(max_workers=2)
+ 
+urls = [3, 2, 4] # 并不是真的url
+ 
+all_task = [executor.submit(get_html, (url)) for url in urls]
+ 
+ 
+ 
+for future in as_completed(all_task):
 
-hydra.initialize(config_path="./configs", version_base="1.2")
-configs = hydra.compose("server")
-video_receiver = VideoReceiver(configs)
-
-logger = LogTimer(1)
-
-start_time = time.time()
-cnt = 0
-while True:
-    for id in range(configs.num_cams):
-        rgb_data, cam_name = video_receiver.get_cam_streamer(id).get_image_tensor()
-        cnt += 1
-        duration = time.time() - start_time
-        logger.trigger(f"frequency: {cnt/(duration)}")
+    data = future.result()
+    print("in main: get page {}s success".format(data))#
+ 
+ 
+print("complete")

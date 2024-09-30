@@ -9,6 +9,10 @@ camera_info:
     name: "robot_camera"
     serial_number: '233522078536'
     stream_rescale_factor: 3 # 424 * 240
+  - 
+    name: "human_camera"
+    serial_number: "236422070023"
+    stream_rescale_factor: 3
 
 #robot_cam_serial_numbers:
 #  - '233522078536'

@@ -1,22 +1,26 @@
-from src.utils.network import *
+from concurrent.futures import ThreadPoolExecutor, as_completed
+ 
 import time
-import traceback
+ 
+# 参数times用来模拟网络请求的时间
+ 
+def get_html(times):
+ 
+    time.sleep(times)
+    print("get page {}s finished".format(times))
+    return times
+executor = ThreadPoolExecutor(max_workers=2)
+ 
+urls = [3, 2, 4] # 并不是真的url
+ 
+all_task = [executor.submit(get_html, (url)) for url in urls]
+ 
+ 
+ 
+for future in as_completed(all_task):
 
-
-def main():
-    context = zmq.Context()
-    socket = context.socket(zmq.PUSH)
-    socket.connect("tcp://10.162.189.83:8087")
-    while True:
-        try:
-            topic_name = "right_hand"
-            buffer = pickle.dumps([0, 1, 0, 0, 1, 0, 0, 1, 0, 0], protocol=-1)
-            socket.send(bytes("{} ".format(topic_name), "utf-8") + buffer)
-            print(buffer)
-            time.sleep(1)
-        except:
-            traceback.print_exc()
-            break
-
-
-main()
+    data = future.result()
+    print("in main: get page {}s success".format(data))#
+ 
+ 
+print("complete")

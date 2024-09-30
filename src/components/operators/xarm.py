@@ -290,6 +290,15 @@ class XarmOperator(Operator):
         )
         final_pose = [*final_position] + [*final_rotation]
 
+        if np.linalg.norm(origin) < 1e-5:
+            print(f"error {origin}")
+            return
+
+        # print(f"origin: {origin}")
+        # print(f"final_pose: {final_pose}")
+        # with open("./log.txt", "a") as f:
+        #     f.write(f"origin: {origin}\nfinal_pose: {final_pose}\n")
+
         self.robot.move_coords(final_pose, speed=1000)
 
         gripper_state = self.get_gripper_state()

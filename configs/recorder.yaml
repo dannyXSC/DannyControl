@@ -10,6 +10,6 @@ recorder:
     host: ${host_address}
     listen_port: ${xarm_info_transmitter_port}
     switch_state_port: ${switch_state_port}
-    save_path: "dataset/push_box"
+    save_path: "dataset/grab_cup"
     template: "episode_{}.hdf5"
     record_varify_port: ${record_varify_port}

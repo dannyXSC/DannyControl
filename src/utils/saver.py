@@ -57,8 +57,8 @@ class H5pyDumper(ABC):
         
         self.init()
 
-    def get_file_name(self):
-        return self.file_name_gen.get_next_file_name()
+    def get_file_path(self):
+        return os.path.join(self.folder,self.file_name_gen.get_next_file_name())
 
     def init(self):
         self.data_dict = {}

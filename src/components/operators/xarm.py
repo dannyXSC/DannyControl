@@ -13,9 +13,9 @@ from copy import deepcopy as copy
 import zmq
 import time
 
-XARM_ANCHOR_O_VALUES = [366, -39.1, 0, 180, 0, 90]
-XARM_ANCHOR_P1_VALUES = [374, 158, 0, 180, 0, 90]
-XARM_ANCHOR_P2_VALUES = [638, -36.2, 0, 180, 0, 90]
+XARM_ANCHOR_O_VALUES = [151.2, 312.3, -1, 180, 0, 90]
+XARM_ANCHOR_P1_VALUES = [159.9, 620, -1, 180, 0, 90]
+XARM_ANCHOR_P2_VALUES = [336.3, 309.9, -1, 180, 0, 90]
 
 
 # Rotation should be filtered when it's being sent
@@ -183,7 +183,6 @@ class XarmOperator(Operator):
 
         # wait for VR request
         self._operation_response_socket.recv()
-        print("received! ")
         self._operation_response_socket.send_string(f"{anchors_counts}")
 
         # for three anchor
@@ -285,7 +284,7 @@ class XarmOperator(Operator):
             / self.hand_length_y
             * self.robot_y
             + np.dot(origin - self.hand_origin, self.hand_z_normalized)
-            * 1100
+            * 1200
             * self.robot_z
         )
         final_pose = [*final_position] + [*final_rotation]

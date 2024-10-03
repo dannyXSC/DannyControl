@@ -4,27 +4,27 @@ from src.utils.network import (
     ZMQKeypointSubscriber,
     create_request_socket,
 )
-from src.utils.timer import FrequencyTimer,LogTimer
+from src.utils.timer import FrequencyTimer, LogTimer
 from src.constants import *
 import h5py
 import numpy as np
 import os
 from src.components import Component
-from concurrent.futures import ThreadPoolExecutor,as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 from src.utils.saver import H5pyDumper
 
 
 class VROpH5pyDumper(H5pyDumper):
-    def __init__(self,folder,template,max_workers = 10) -> None:
-        super().__init__(folder,template)
+    def __init__(self, folder, template, max_workers=10) -> None:
+        super().__init__(folder, template)
         self.max_workers = max_workers
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.all_task = []
 
     def _save(data_dict, file_name, metadata=None):
         print(f"H5py saving start! Path: {file_name}")
-        
+
         camera_key = "cam_data"
         with h5py.File(file_name, "w") as file:
             camera = file.create_group(camera_key)
@@ -52,10 +52,8 @@ class VROpH5pyDumper(H5pyDumper):
                         compression_opts=6,
                     )
                 else:
-                    data_dict[key] = np.array(
-                        data_dict[key], dtype=np.float32
-                    )
-                    if key=='timestamp':
+                    data_dict[key] = np.array(data_dict[key], dtype=np.float32)
+                    if key == "timestamp":
                         print(data_dict[key])
                     file.create_dataset(
                         key,
@@ -74,12 +72,12 @@ class VROpH5pyDumper(H5pyDumper):
             if task.done():
                 self.all_task.remove(task)
         return len(self.all_task)
-    
-    def save_sync(self,metadata=None):
+
+    def save_sync(self, metadata=None):
         while True:
             task_num = self.get_active_tasks()
             # 允许等待 {5} 个任务
-            if task_num<self.max_workers + 5:
+            if task_num < self.max_workers + 5:
                 break
         file_name = self.get_file_path()
         self.all_task.append(self.executor.submit(VROpH5pyDumper._save,self.data_dict,file_name,metadata))
@@ -90,9 +88,16 @@ class VROpH5pyDumper(H5pyDumper):
             task_num = self.get_active_tasks()
             print("Remain task number: {}".format(task_num))
 
+
 class VROperationRecorder(Component):
     def __init__(
-        self, host, listen_port, switch_state_port, record_varify_port, save_path,template
+        self,
+        host,
+        listen_port,
+        switch_state_port,
+        record_varify_port,
+        save_path,
+        template,
     ) -> None:
         self.payload_subscriber = ZMQKeypointSubscriber(
             host, listen_port, XARM_NOTIFIER_TOPIC
@@ -102,7 +107,7 @@ class VROperationRecorder(Component):
         self.record_varify_socket = create_request_socket(host, record_varify_port)
 
         self.timer = FrequencyTimer(RECORD_FREQ)
-        self.h5py_dumper = VROpH5pyDumper(save_path,template)
+        self.h5py_dumper = VROpH5pyDumper(save_path, template)
         self.save_path = save_path
 
     def _get_payload(self):
@@ -128,14 +133,12 @@ class VROperationRecorder(Component):
                         cnt += 1
                     self.timer.end_loop()
                     continue
-                
-                
+
                 payload = self._get_payload()
                 # 调整payload的格式
 
                 # 用h5py对 payload 进行保存
                 self.h5py_dumper.add(payload)
-            
 
                 self.timer.end_loop()
             except KeyboardInterrupt:
@@ -143,7 +146,7 @@ class VROperationRecorder(Component):
 
         self.payload_subscriber.stop()
         self.record_varify_socket.close()
-        
+
         self.h5py_dumper.stop()
 
         print("Stopping the recorder.")

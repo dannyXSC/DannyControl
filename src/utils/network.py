@@ -113,7 +113,8 @@ class ZMQCameraPublisher(object):
         self.socket.send(b"intrinsics " + pickle.dumps(array, protocol=-1))
 
     def pub_rgb_image(self, rgb_image, timestamp):
-        _, buffer = cv2.imencode(".jpg", rgb_image, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+        # _, buffer = cv2.imencode(".jpg", rgb_image, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+        _, buffer = cv2.imencode(".jpg", rgb_image, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
         data = dict(timestamp=timestamp, rgb_image=base64.b64encode(buffer))
         self.socket.send(b"rgb_image " + pickle.dumps(data, protocol=-1))
 

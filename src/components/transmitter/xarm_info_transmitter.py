@@ -1,5 +1,5 @@
 from src.components import Component
-from src.utils.timer import FrequencyTimer
+from src.utils.timer import FrequencyTimer, LogTimer
 from src.constants import *
 from src.utils.network import ZMQKeypointPublisher, ZMQKeypointSubscriber
 from src.components.robot.xarm import Xarm
@@ -11,13 +11,7 @@ import time, json
 
 
 class XarmInfoNotifier(Component):
-    def __init__(
-        self,
-        host,
-        transformation_port,
-        xarm_info_transmitter_port,
-        xarm_ip,
-    ):
+    def __init__(self, host, transformation_port, xarm_info_transmitter_port, xarm_ip):
         self.notify_component_start("xarm notifier")
 
         hydra.initialize(config_path="../../../configs", version_base="1.2")
@@ -36,6 +30,7 @@ class XarmInfoNotifier(Component):
 
     def stream(self):
         step = 0
+        logger = LogTimer(1)
         while True:
             if self.robot.if_shutdown():
                 continue
@@ -52,9 +47,13 @@ class XarmInfoNotifier(Component):
                     self._transformed_hand_keypoint_subscriber.recv_keypoints()
                 )
                 end_position = self.robot.get_cartesian_position()
+
+                if step == 0:
+                    start_time = time.time()
+
                 cam_data = {}
                 timestamp = time.time()
-                for id in range(self.configs.num_cams):
+                for id in range(len(self.configs.camera_info)):
                     rgb_data, cam_name = self.video_receiver.get_cam_streamer(
                         id
                     ).get_image_tensor()
@@ -76,6 +75,8 @@ class XarmInfoNotifier(Component):
                 # End the timer
                 self.timer.end_loop()
                 step += 1
+
+                # logger.trigger(f"{step/(time.time()-start_time)}")
 
             except Exception as e:
                 print(e)

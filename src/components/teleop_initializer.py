@@ -1,6 +1,7 @@
 from multiprocessing import Process
 
 from src.components.initializers import ProcessInstantiator, _start_component
+import sys
 
 
 class TeleOperator(ProcessInstantiator):

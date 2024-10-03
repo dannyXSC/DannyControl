@@ -183,7 +183,6 @@ class XarmOperator(Operator):
 
         # wait for VR request
         self._operation_response_socket.recv()
-        print("received! ")
         self._operation_response_socket.send_string(f"{anchors_counts}")
 
         # for three anchor

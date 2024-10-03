@@ -3,6 +3,8 @@ import hydra
 from abc import ABC
 from multiprocessing import Process
 
+import sys
+
 
 class ProcessInstantiator(ABC):
     def __init__(self, configs):

@@ -11,13 +11,7 @@ import time, json
 
 
 class XarmInfoNotifier(Component):
-    def __init__(
-        self,
-        host,
-        transformation_port,
-        xarm_info_transmitter_port,
-        xarm_ip,
-    ):
+    def __init__(self, host, transformation_port, xarm_info_transmitter_port, xarm_ip):
         self.notify_component_start("xarm notifier")
 
         hydra.initialize(config_path="../../../configs", version_base="1.2")
@@ -59,7 +53,7 @@ class XarmInfoNotifier(Component):
 
                 cam_data = {}
                 timestamp = time.time()
-                for id in range(self.configs.num_cams):
+                for id in range(len(self.configs.camera_info)):
                     rgb_data, cam_name = self.video_receiver.get_cam_streamer(
                         id
                     ).get_image_tensor()

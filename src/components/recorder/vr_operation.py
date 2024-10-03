@@ -8,62 +8,23 @@ from src.utils.timer import FrequencyTimer, LogTimer
 from src.constants import *
 import h5py
 import numpy as np
-from abc import ABC, abstractmethod
 import os
 from src.components import Component
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
-
-
-class VROpPayloadSubscriber(ZMQPayloadSubscriber):
-    def __init__(self, host, port):
-        super().__init__(host, port)
-
-    def postprocessing(self, payload):
-        # TODO: 对图片进行后处理
-        return payload
-
-
-class H5pyDumper(ABC):
-    def __init__(self) -> None:
-        self.init()
-
-    def init(self):
-        self.data_dict = {}
-
-    def empty(self):
-        return len(self.data_dict) == 0
-
-    def _dict_append(self, target, source):
-        # target source都是字典
-        for key, value in source.items():
-            if not isinstance(value, dict):
-                if key not in target:
-                    target[key] = [source[key]]
-                else:
-                    target[key].append(source[key])
-            else:
-                if key not in target:
-                    target[key] = {}
-                self._dict_append(target[key], source[key])
-
-    def add(self, payload):
-        # keys in payload must be same all the time
-        self._dict_append(self.data_dict, payload)
-
-    @abstractmethod
-    def save(self, file_name, metadata=None):
-        pass
+from src.utils.saver import H5pyDumper
 
 
 class VROpH5pyDumper(H5pyDumper):
-    def __init__(self, max_workers=10) -> None:
-        super().__init__()
+    def __init__(self, folder, template, max_workers=10) -> None:
+        super().__init__(folder, template)
         self.max_workers = max_workers
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.all_task = []
 
     def _save(data_dict, file_name, metadata=None):
+        print(f"H5py saving start! Path: {file_name}")
+
         camera_key = "cam_data"
         with h5py.File(file_name, "w") as file:
             camera = file.create_group(camera_key)
@@ -102,7 +63,8 @@ class VROpH5pyDumper(H5pyDumper):
                     )
         print(f"H5py saving complete! Path: {file_name}")
 
-    def save(self, file_name, metadata=None):
+    def save(self, metadata=None):
+        file_name = self.get_file_name()
         VROpH5pyDumper._save(self.data_dict, file_name, metadata)
 
     def get_active_tasks(self):
@@ -111,12 +73,13 @@ class VROpH5pyDumper(H5pyDumper):
                 self.all_task.remove(task)
         return len(self.all_task)
 
-    def save_sync(self, file_name, metadata=None):
+    def save_sync(self, metadata=None):
         while True:
             task_num = self.get_active_tasks()
             # 允许等待 {5} 个任务
             if task_num < self.max_workers + 5:
                 break
+        file_name = self.get_file_name()
         self.all_task.append(
             self.executor.submit(
                 VROpH5pyDumper._save, self.data_dict, file_name, metadata
@@ -132,7 +95,13 @@ class VROpH5pyDumper(H5pyDumper):
 
 class VROperationRecorder(Component):
     def __init__(
-        self, host, listen_port, switch_state_port, record_varify_port, save_path
+        self,
+        host,
+        listen_port,
+        switch_state_port,
+        record_varify_port,
+        save_path,
+        template,
     ) -> None:
         self.payload_subscriber = ZMQKeypointSubscriber(
             host, listen_port, XARM_NOTIFIER_TOPIC
@@ -142,7 +111,7 @@ class VROperationRecorder(Component):
         self.record_varify_socket = create_request_socket(host, record_varify_port)
 
         self.timer = FrequencyTimer(RECORD_FREQ)
-        self.h5py_dumper = VROpH5pyDumper()
+        self.h5py_dumper = VROpH5pyDumper(save_path, template)
         self.save_path = save_path
 
     def _get_payload(self):
@@ -159,14 +128,8 @@ class VROperationRecorder(Component):
                 state = self.state_subscriber.recv_payload()
 
                 if state != STATUS_RUNNING:
-                    if state == STATUS_RESET:
-                        self.h5py_dumper.init()
-                    elif not self.h5py_dumper.empty():
-                        target_path = os.path.join(
-                            f"{self.save_path}", f"episode_{cnt}.hdf5"
-                        )
-                        # self.h5py_dumper.save(target_path)
-                        self.h5py_dumper.save_sync(target_path)
+                    if not self.h5py_dumper.empty():
+                        self.h5py_dumper.save_sync()
                         self.h5py_dumper.init()
                         self.record_varify_socket.send(b"")
                         self.record_varify_socket.recv()

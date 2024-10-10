@@ -158,7 +158,7 @@ class XarmOperator(Operator):
             transformed_hand_coords[OCULUS_JOINTS["index"][-1]]
             - transformed_hand_coords[OCULUS_JOINTS["thumb"][-1]]
         )
-        if distance > 0.05:
+        if distance > 0.06:
             return 1
         else:
             return 0
@@ -266,9 +266,11 @@ class XarmOperator(Operator):
         # robot arm space move
         final_rotation_matrix = self.robot_init_rotation @ m_transition
 
-        final_rotation = Rotation.from_matrix(final_rotation_matrix).as_euler(
-            "xyz", degrees=True
-        )
+        # final_rotation = Rotation.from_matrix(final_rotation_matrix).as_euler(
+        #     "xyz", degrees=True
+        # )
+        # hard code
+        final_rotation = XARM_ANCHOR_O_VALUES[3:]
 
         # pose_cart = self._homo2cart(final_pose)
         # final_pose_cart = self.comp_filter(pose_cart)
@@ -287,6 +289,10 @@ class XarmOperator(Operator):
             * 1200
             * self.robot_z
         )
+
+        # hard code
+        final_position[2] = max(final_position[2], 0)
+
         final_pose = [*final_position] + [*final_rotation]
 
         if np.linalg.norm(origin) < 1e-5:
@@ -299,6 +305,7 @@ class XarmOperator(Operator):
         #     f.write(f"origin: {origin}\nfinal_pose: {final_pose}\n")
 
         self.robot.move_coords(final_pose, speed=1000)
+        # self.robot.move_coords(final_pose, wait=False, speed=1000)
 
         gripper_state = self.get_gripper_state()
         if gripper_state != self.gripper_state:

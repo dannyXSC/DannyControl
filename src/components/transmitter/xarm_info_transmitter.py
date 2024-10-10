@@ -40,6 +40,11 @@ class XarmInfoNotifier(Component):
 
                 payload = {}
                 gripper_state = self.robot.get_gripper_state()
+<<<<<<< HEAD
+=======
+                qpos = self.robot.get_joint_state()[0]
+                qvel = self.robot.get_joint_velocity()
+>>>>>>> data_process
                 transformed_hand_frames = (
                     self._transformed_arm_keypoint_subscriber.recv_keypoints()
                 )
@@ -63,6 +68,11 @@ class XarmInfoNotifier(Component):
                 payload["step"] = step
                 payload["timestamp"] = timestamp
                 payload["gripper_state"] = gripper_state
+<<<<<<< HEAD
+=======
+                payload["qpos"] = qpos
+                payload["qvel"] = qvel
+>>>>>>> data_process
                 payload["transformed_hand_frames"] = transformed_hand_frames
                 payload["transformed_hand_coords"] = transformed_hand_coords
                 payload["end_position"] = end_position

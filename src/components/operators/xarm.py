@@ -1,5 +1,10 @@
 from .operator import Operator
-from src.utils.network import ZMQKeypointSubscriber, create_response_socket
+from src.utils.network import (
+    ZMQKeypointSubscriber,
+    create_response_socket,
+    create_request_socket,
+    ZMQKeypointPublisher,
+)
 from src.components.robot.xarm import Xarm
 from src.utils.timer import FrequencyTimer, StationTimer, LogTimer
 from src.utils.vectorops import *
@@ -48,6 +53,7 @@ class XarmOperator(Operator):
         host,
         transformed_keypoints_port,
         operation_stage_port,
+        action_port,
         xarm_ip,
         comp_ratio=0,
         log=False,
@@ -63,6 +69,8 @@ class XarmOperator(Operator):
         self._operation_response_socket = create_response_socket(
             host, operation_stage_port
         )
+
+        self.action_publisher = ZMQKeypointPublisher(host, action_port)
 
         self._robot = Xarm(xarm_ip)
         # Frequency timer
@@ -171,15 +179,10 @@ class XarmOperator(Operator):
     def _reset_teleop(self):
         print("****** RESETTING TELEOP ****** ")
         self.robot.move_coords(XARM_ANCHOR_O_VALUES)
-        # robot_init_cart = self._homo2cart(self.robot_init_H)
-        # self.comp_filter = Filter(robot_init_cart, comp_ratio=self.comp_ratio)
 
         anchors_counts = 0
         anchors = []
         pre_state = False
-        # self.hand_init_origin = first_hand_frame[0]
-        # self.hand_init_H = self._turn_frame_to_homo_mat(first_hand_frame)
-        # self.hand_init_t = copy(self.hand_init_H[:3, 3])
 
         # wait for VR request
         self._operation_response_socket.recv()
@@ -299,6 +302,8 @@ class XarmOperator(Operator):
             print(f"error {origin}")
             return
 
+        self.action_publisher.pub_keypoints(final_pose, topic_name="action")
+
         # print(f"origin: {origin}")
         # print(f"final_pose: {final_pose}")
         # with open("./log.txt", "a") as f:
@@ -332,6 +337,7 @@ class XarmOperator(Operator):
             except KeyboardInterrupt:
                 break
 
+        self.anchor_socket.close()
         self.transformed_arm_keypoint_subscriber.stop()
         self.transformed_hand_keypoint_subscriber.stop()
         self.robot.stop()

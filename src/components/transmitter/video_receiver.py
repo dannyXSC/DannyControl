@@ -40,27 +40,11 @@ class VideoStreamer(object):
         raw_data = self.socket.recv()
         data = raw_data.lstrip(b"rgb_image ")
         data = pickle.loads(data)
-<<<<<<< HEAD
 
         encoded_rgb = np.frombuffer(base64.b64decode(data["rgb_image"]), np.uint8)
         decoded_rgb = cv2.imdecode(encoded_rgb, cv2.IMREAD_COLOR)
 
         # timestamp = data["timestamp"]
-=======
-        encoded_rgb = np.frombuffer(base64.b64decode(data['rgb_image']), np.uint8)
-        decoded_rgb = cv2.imdecode(encoded_rgb, cv2.IMREAD_COLOR).reshape(3,self.height,self.width)
-        timestamp = data['timestamp']
-        # file_path = f'D:\project\project1\code\data\\time_{timestamp}.jpg'
-        # with open(file_path, 'wb') as f:
-        #     f.write(encoded_rgb)
-        # print(f"Image saved to: {file_path}")
-        # image = Image.open(file_path)
-        # image = np.array(image)
-        # image_tensor = self.transforms(image)
-        # print(image_tensor.shape)
-        # return encoded_rgb, timestamp
-        # return encoded_rgb
->>>>>>> data_process
         return decoded_rgb, self.get_cam_name()
 
     def process_frames(self):

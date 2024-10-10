@@ -40,6 +40,7 @@ transmitters:
     transformation_port: ${transformed_position_keypoint_port}
     xarm_info_transmitter_port: ${xarm_info_transmitter_port}
     xarm_ip: ${xarm_ip}
+    action_port: ${action_port}
 
 
 # Operators used to retarget the keypoints
@@ -49,6 +50,7 @@ operators:
     host: ${host_address}
     transformed_keypoints_port: ${transformed_position_keypoint_port}
     operation_stage_port: ${operation_stage_port}
+    action_port: ${action_port}
     xarm_ip:  ${xarm_ip}
     comp_ratio: 0.5
     # log: True

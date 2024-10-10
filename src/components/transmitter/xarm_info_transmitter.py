@@ -8,10 +8,18 @@ from src.components.transmitter.video_receiver import VideoReceiver
 from src.components.operators.xarm import XarmOperator
 import hydra
 import time, json
+import zmq
 
 
 class XarmInfoNotifier(Component):
-    def __init__(self, host, transformation_port, xarm_info_transmitter_port, xarm_ip):
+    def __init__(
+        self,
+        host,
+        transformation_port,
+        xarm_info_transmitter_port,
+        action_port,
+        xarm_ip,
+    ):
         self.notify_component_start("xarm notifier")
 
         hydra.initialize(config_path="../../../configs", version_base="1.2")
@@ -24,13 +32,21 @@ class XarmInfoNotifier(Component):
             host=host, port=transformation_port, topic="transformed_hand_coords"
         )
         self.xarm_publisher = ZMQKeypointPublisher(host, xarm_info_transmitter_port)
-        self.robot = Xarm(xarm_ip)
+        self.action_subscriber = ZMQKeypointSubscriber(host, action_port, "action")
 
+        self.robot = Xarm(xarm_ip)
         self.timer = FrequencyTimer(VR_FREQ)
+
+        self.pre_action = None
+
+    def _get_action(self):
+        data = self.action_subscriber.recv_keypoints(flags=zmq.NOBLOCK)
+        return data
 
     def stream(self):
         step = 0
         logger = LogTimer(1)
+        start_time = None
         while True:
             if self.robot.if_shutdown():
                 continue
@@ -38,13 +54,12 @@ class XarmInfoNotifier(Component):
             try:
                 self.timer.start_loop()
 
+                # receive anchors
+
                 payload = {}
                 gripper_state = self.robot.get_gripper_state()
-<<<<<<< HEAD
-=======
                 qpos = self.robot.get_joint_state()[0]
                 qvel = self.robot.get_joint_velocity()
->>>>>>> data_process
                 transformed_hand_frames = (
                     self._transformed_arm_keypoint_subscriber.recv_keypoints()
                 )
@@ -53,8 +68,23 @@ class XarmInfoNotifier(Component):
                 )
                 end_position = self.robot.get_cartesian_position()
 
+                # get action
+                action = None
                 if step == 0:
+                    action = self.action_subscriber.recv_keypoints()
                     start_time = time.time()
+                else:
+                    action = self._get_action()
+
+                if action is not None:
+                    self.pre_action = action
+                else:
+                    action = self.pre_action
+
+                print(action)
+
+                # if int(time.time() - start_time) > 0:
+                #     logger.trigger(f"{step / int(time.time() - start_time)}")
 
                 cam_data = {}
                 timestamp = time.time()
@@ -68,15 +98,13 @@ class XarmInfoNotifier(Component):
                 payload["step"] = step
                 payload["timestamp"] = timestamp
                 payload["gripper_state"] = gripper_state
-<<<<<<< HEAD
-=======
                 payload["qpos"] = qpos
                 payload["qvel"] = qvel
->>>>>>> data_process
                 payload["transformed_hand_frames"] = transformed_hand_frames
                 payload["transformed_hand_coords"] = transformed_hand_coords
                 payload["end_position"] = end_position
                 payload["cam_data"] = cam_data
+                # payload["action"] = action
 
                 self.xarm_publisher.pub_keypoints(
                     payload, topic_name=XARM_NOTIFIER_TOPIC

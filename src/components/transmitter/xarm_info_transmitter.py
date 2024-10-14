@@ -81,8 +81,6 @@ class XarmInfoNotifier(Component):
                 else:
                     action = self.pre_action
 
-                print(action)
-
                 # if int(time.time() - start_time) > 0:
                 #     logger.trigger(f"{step / int(time.time() - start_time)}")
 
@@ -104,7 +102,7 @@ class XarmInfoNotifier(Component):
                 payload["transformed_hand_coords"] = transformed_hand_coords
                 payload["end_position"] = end_position
                 payload["cam_data"] = cam_data
-                # payload["action"] = action
+                payload["action"] = action
 
                 self.xarm_publisher.pub_keypoints(
                     payload, topic_name=XARM_NOTIFIER_TOPIC

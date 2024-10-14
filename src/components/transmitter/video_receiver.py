@@ -13,15 +13,12 @@ import json
 
 
 class VideoStreamer(object):
-    def __init__(self, host, cam_port, height, width, cam_name, serial_num):
+    def __init__(self, host, cam_port, cam_name):
         self._init_socket(host, cam_port)
-        self.height = height
-        self.width = width
         self.transforms = transforms.Compose(
             [transforms.ToPILImage(), transforms.ToTensor()]
         )
         self.cam_name = cam_name
-        self.serial_num = serial_num
 
     def get_cam_name(self):
         return self.cam_name
@@ -99,10 +96,7 @@ class VideoReceiver(object):
                 VideoStreamer(
                     host=self.host_address,
                     cam_port=self.port_offset + cam_idx,
-                    height=self.image_height,
-                    width=self.image_width,
                     cam_name=cam_name,
-                    serial_num=cam_serial_num,
                 )
             )
 

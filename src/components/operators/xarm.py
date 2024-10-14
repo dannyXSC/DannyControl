@@ -302,8 +302,6 @@ class XarmOperator(Operator):
             print(f"error {origin}")
             return
 
-        self.action_publisher.pub_keypoints(final_pose, topic_name="action")
-
         # print(f"origin: {origin}")
         # print(f"final_pose: {final_pose}")
         # with open("./log.txt", "a") as f:
@@ -318,6 +316,11 @@ class XarmOperator(Operator):
                 gripper_state, wait=False, wait_motion=False
             )
             self.gripper_state = gripper_state
+
+        # publish pose + gripper astate
+        self.action_publisher.pub_keypoints(
+            final_pose + [gripper_state], topic_name="action"
+        )
 
     # NOTE: This is for debugging should remove this when needed
     def stream(self):

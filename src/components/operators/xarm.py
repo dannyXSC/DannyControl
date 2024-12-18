@@ -269,11 +269,11 @@ class XarmOperator(Operator):
         # robot arm space move
         final_rotation_matrix = self.robot_init_rotation @ m_transition
 
-        # final_rotation = Rotation.from_matrix(final_rotation_matrix).as_euler(
-        #     "xyz", degrees=True
-        # )
+        final_rotation = Rotation.from_matrix(final_rotation_matrix).as_euler(
+            "xyz", degrees=True
+        )
         # hard code
-        final_rotation = XARM_ANCHOR_O_VALUES[3:]
+        # final_rotation = XARM_ANCHOR_O_VALUES[3:]
 
         # pose_cart = self._homo2cart(final_pose)
         # final_pose_cart = self.comp_filter(pose_cart)

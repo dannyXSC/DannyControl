@@ -96,7 +96,6 @@ class TransformHandPositionCoords(Component):
         )  # Unity space - Z
         cross_product = np.cross(palm_direction, palm_normal)  # Unity space - X
 
-        # - for maintaining left-handed coordination
         return [origin_coord, cross_product, -palm_normal, palm_direction]
 
     # Create a coordinate frame for the arm

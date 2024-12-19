@@ -6,6 +6,11 @@ def normalize_vector(vector):
     return vector / np.linalg.norm(vector)
 
 
+def orthogonalization(v1, v2):
+    # orthogonalization v2 base on v1
+    return v2 - np.dot(v1, v2) * v1 / np.dot(v1, v1)
+
+
 def moving_average(vector, moving_average_queue, limit):
     moving_average_queue.append(vector)
 

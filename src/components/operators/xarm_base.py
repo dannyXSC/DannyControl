@@ -8,7 +8,6 @@ from src.utils.network import (
 from src.components.robot.xarm import Xarm
 from src.utils.timer import FrequencyTimer, StationTimer, LogTimer
 from src.utils.vectorops import *
-from src.utils.retargeter import RotationRet, PositionRet
 from src.constants import *
 
 from scipy.spatial.transform import Rotation
@@ -89,18 +88,16 @@ class XarmOperator(Operator):
         if self.log:
             self.pre_time = time.time()
 
-        self.position_retargeter = None
-        self.rotation_retargeter = None
-        # self.robot_o = np.array(XARM_ANCHOR_O_VALUES[:3])
-        # self.robot_y = np.array(XARM_ANCHOR_P1_VALUES[:3]) - self.robot_o
-        # self.robot_x = np.array(XARM_ANCHOR_P2_VALUES[:3]) - self.robot_o
-        # # orthogonalization
-        # self.robot_x = self._orthogonalization(self.robot_y, self.robot_x)
-        # self.robot_z = normalize_vector(np.cross(self.robot_x, self.robot_y))
+        self.robot_o = np.array(XARM_ANCHOR_O_VALUES[:3])
+        self.robot_y = np.array(XARM_ANCHOR_P1_VALUES[:3]) - self.robot_o
+        self.robot_x = np.array(XARM_ANCHOR_P2_VALUES[:3]) - self.robot_o
+        # orthogonalization
+        self.robot_x = self._orthogonalization(self.robot_y, self.robot_x)
+        self.robot_z = normalize_vector(np.cross(self.robot_x, self.robot_y))
 
-        # self.robot_init_rotation = R.from_euler(
-        #     "xyz", XARM_ANCHOR_O_VALUES[3:], degrees=True
-        # ).as_matrix()
+        self.robot_init_rotation = R.from_euler(
+            "xyz", XARM_ANCHOR_O_VALUES[3:], degrees=True
+        ).as_matrix()
 
     @property
     def timer(self):
@@ -191,7 +188,6 @@ class XarmOperator(Operator):
         self._operation_response_socket.recv()
         self._operation_response_socket.send_string(f"{anchors_counts}")
 
-        hand_init_rotation = None
         # for three anchor
         while anchors_counts < 3:
             # hand_frame = self._get_hand_frame()
@@ -213,7 +209,9 @@ class XarmOperator(Operator):
                 # init rotation matrix
                 # last hand position
                 if anchors_counts == 3:
-                    hand_init_rotation = self._turn_frame_to_rotation_mat(hand_frame)
+                    self.hand_init_rotation = self._turn_frame_to_rotation_mat(
+                        hand_frame
+                    )
                     # close _operation_response_socket
                     self._operation_response_socket.recv()
                     self._operation_response_socket.close()
@@ -226,36 +224,19 @@ class XarmOperator(Operator):
                 )
             )
             pre_state = state
-
-        robot_init_rotation = R.from_euler(
-            "xyz", XARM_ANCHOR_O_VALUES[3:], degrees=True
-        ).as_matrix()
-        self.rotation_retargeter = RotationRet(
-            hand_init_rotation, robot_init_rotation, self._P
+        self.hand_origin = np.array(anchors[2])
+        self.hand_y = np.array(anchors[0]) - self.hand_origin
+        self.hand_x = np.array(anchors[1]) - self.hand_origin
+        self.hand_length_y = np.linalg.norm(self.hand_y)
+        self.hand_length_x = np.linalg.norm(self.hand_x)
+        self.hand_y_normalized = normalize_vector(self.hand_y)
+        self.hand_x_normalized = normalize_vector(
+            self._orthogonalization(self.hand_y, self.hand_x)
         )
-        self.position_retargeter = PositionRet(
-            anchors[2],
-            anchors[1],
-            anchors[0],
-            XARM_ANCHOR_O_VALUES[:3],
-            XARM_ANCHOR_P2_VALUES[:3],
-            XARM_ANCHOR_P1_VALUES[:3],
-            1200,
+        # 左手系，所以是相反的
+        self.hand_z_normalized = -np.cross(
+            self.hand_x_normalized, self.hand_y_normalized
         )
-
-        # self.hand_origin = np.array(anchors[2])
-        # self.hand_y = np.array(anchors[0]) - self.hand_origin
-        # self.hand_x = np.array(anchors[1]) - self.hand_origin
-        # self.hand_length_y = np.linalg.norm(self.hand_y)
-        # self.hand_length_x = np.linalg.norm(self.hand_x)
-        # self.hand_y_normalized = normalize_vector(self.hand_y)
-        # self.hand_x_normalized = normalize_vector(
-        #     self._orthogonalization(self.hand_y, self.hand_x)
-        # )
-        # # 左手系，所以是相反的
-        # self.hand_z_normalized = -np.cross(
-        #     self.hand_x_normalized, self.hand_y_normalized
-        # )
 
         self.is_first_frame = False
 
@@ -278,18 +259,15 @@ class XarmOperator(Operator):
         # hand current transform matrix
         self.hand_cur_rotation = self._turn_frame_to_rotation_mat(moving_hand_frame)
 
-        # m_transition = (
-        #     np.linalg.pinv(self._P)
-        #     @ np.linalg.pinv(self.hand_init_rotation)
-        #     @ self.hand_cur_rotation
-        #     @ self._P
-        # )
+        m_transition = (
+            np.linalg.pinv(self._P)
+            @ np.linalg.pinv(self.hand_init_rotation)
+            @ self.hand_cur_rotation
+            @ self._P
+        )
 
         # robot arm space move
-        # final_rotation_matrix = self.robot_init_rotation @ m_transition
-        final_rotation_matrix = self.rotation_retargeter.get_target(
-            self.hand_cur_rotation
-        )
+        final_rotation_matrix = self.robot_init_rotation @ m_transition
 
         final_rotation = Rotation.from_matrix(final_rotation_matrix).as_euler(
             "xyz", degrees=True
@@ -302,19 +280,18 @@ class XarmOperator(Operator):
 
         # TODO: 简化
         origin = moving_hand_frame[0]
-        # final_position = (
-        #     self.robot_o
-        #     + np.dot(origin - self.hand_origin, self.hand_x_normalized)
-        #     / self.hand_length_x
-        #     * self.robot_x
-        #     + np.dot(origin - self.hand_origin, self.hand_y_normalized)
-        #     / self.hand_length_y
-        #     * self.robot_y
-        #     + np.dot(origin - self.hand_origin, self.hand_z_normalized)
-        #     * 1200
-        #     * self.robot_z
-        # )
-        final_position = self.position_retargeter.get_target(origin)
+        final_position = (
+            self.robot_o
+            + np.dot(origin - self.hand_origin, self.hand_x_normalized)
+            / self.hand_length_x
+            * self.robot_x
+            + np.dot(origin - self.hand_origin, self.hand_y_normalized)
+            / self.hand_length_y
+            * self.robot_y
+            + np.dot(origin - self.hand_origin, self.hand_z_normalized)
+            * 1200
+            * self.robot_z
+        )
 
         # hard code
         final_position[2] = max(final_position[2], 0)

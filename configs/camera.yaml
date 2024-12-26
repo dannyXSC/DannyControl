@@ -14,12 +14,8 @@ camera_info:
     serial_number: "236422070023"
     stream_rescale_factor: 3
 
-#robot_cam_serial_numbers:
-#  - '233522078536'
-
-name:
-  - "robot"
-  - "human"
+oculus_cam: 0 # First camera
+num_cams: 2
 
 cam_configs:
   width: 1280
@@ -27,9 +23,6 @@ cam_configs:
   fps: 30
   processing_preset: 1 # High accuracy mode
   rotation_angle: 0
-
-oculus_cam: 0 # First camera
-num_cams: 2
 
 hydra:  
   output_subdir: null  

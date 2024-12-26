@@ -58,3 +58,9 @@ def calculate_angle(coord_1, coord_2, coord_3):
 
 def coord_in_bound(bound, coord):
     return cv2.pointPolygonTest(np.float32(bound), np.float32(coord), False)
+
+
+# frame to rotation matrix
+def frame_to_mat3(frame):
+    R = frame[1:]
+    return np.transpose(R)

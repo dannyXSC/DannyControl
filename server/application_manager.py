@@ -33,7 +33,7 @@ class MonitoringApplication(object):
         self.host_address = configs.host_address
         self.keypoint_port = configs.keypoint_port
         self.port_offset = configs.cam_port_offset
-        self.num_cams = len(configs.robot_cam_serial_numbers)
+        self.num_cams = len(configs.camera_info)
 
         # Initializing the streamers        
         self._init_cam_streamers()

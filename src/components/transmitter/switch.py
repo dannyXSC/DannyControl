@@ -10,11 +10,44 @@ from src.constants import *
 import numpy as np
 import sys
 import os
-import keyboard
+# import keyboard
+################################################################
+from pynput import keyboard
 
+# 用来存储按键的状态
+key_states = {}
+
+# 键盘按下事件的回调
+def on_press(key):
+    try:
+        # 将按下的键记录为 True
+        key_states[key.char] = True
+    except AttributeError:
+        # 如果是特殊键，记录为 True
+        key_states[str(key)] = True
+
+# 键盘松开事件的回调
+def on_release(key):
+    try:
+        # 将松开的键记录为 False
+        key_states[key.char] = False
+    except AttributeError:
+        # 如果是特殊键，记录为 False
+        key_states[str(key)] = False
+
+    # 退出监听（按下 Esc 键）
+    if key == keyboard.Key.esc:
+        return False
+
+# 启动键盘监听器
+listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+listener.start()
+# 检查某个键是否被按下
+def is_pressed(key):
+    return key_states.get(key, False)
+################################################################
 
 class Switch(Component):
-
     def __init__(
         self,
         host,
@@ -98,9 +131,13 @@ class Switch(Component):
                 #     pass
                 # operation_pre_result = operation_result
 
-                if keyboard.is_pressed("a") and self.state == STATUS_READY:
+                # if keyboard.is_pressed("a") and self.state == STATUS_READY:
+                #     self.state = STATUS_RUNNING
+                # if keyboard.is_pressed("f") and self.state == STATUS_RUNNING:
+                #     self.state = STATUS_STOP
+                if is_pressed("a") and self.state == STATUS_READY:
                     self.state = STATUS_RUNNING
-                if keyboard.is_pressed("f") and self.state == STATUS_RUNNING:
+                if is_pressed("f") and self.state == STATUS_RUNNING:
                     self.state = STATUS_STOP
                 # if keyboard.is_pressed("r"):
                 #     self.state = STATUS_RESET

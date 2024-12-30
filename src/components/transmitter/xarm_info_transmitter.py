@@ -9,6 +9,7 @@ from src.components.operators.xarm import XarmOperator
 import hydra
 import time, json
 import zmq
+from types import SimpleNamespace
 
 
 class XarmInfoNotifier(Component):
@@ -19,12 +20,18 @@ class XarmInfoNotifier(Component):
         xarm_info_transmitter_port,
         action_port,
         xarm_ip,
+        cam_port_offset,
+        camera_info,
+        cam_configs
     ):
         self.notify_component_start("xarm notifier")
-
-        hydra.initialize(config_path="../../../configs", version_base="1.2")
-        self.configs = hydra.compose("server")
-        self.video_receiver = VideoReceiver(self.configs)
+        self.camera_info = camera_info
+        self.video_receiver = VideoReceiver(SimpleNamespace(
+            host_address = host,
+            cam_port_offset = cam_port_offset,
+            camera_info = camera_info,
+            cam_configs = cam_configs,
+        ))
         self._transformed_arm_keypoint_subscriber = ZMQKeypointSubscriber(
             host=host, port=transformation_port, topic="transformed_hand_frame"
         )
@@ -81,12 +88,9 @@ class XarmInfoNotifier(Component):
                 else:
                     action = self.pre_action
 
-                # if int(time.time() - start_time) > 0:
-                #     logger.trigger(f"{step / int(time.time() - start_time)}")
-
                 cam_data = {}
                 timestamp = time.time()
-                for id in range(len(self.configs.camera_info)):
+                for id in range(len(self.camera_info)):
                     rgb_data, cam_name = self.video_receiver.get_cam_streamer(
                         id
                     ).get_image_tensor()

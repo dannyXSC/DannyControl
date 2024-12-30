@@ -52,6 +52,7 @@ class FileNameGenerator:
     
 class H5pyDumper(ABC):
     def __init__(self,folder,template) -> None:
+        os.makedirs(folder, exist_ok=True)
         self.folder = folder
         self.file_name_gen = FileNameGenerator(folder,template)
         

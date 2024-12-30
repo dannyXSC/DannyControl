@@ -34,7 +34,7 @@ class VROpH5pyDumper(H5pyDumper):
                     for cam_name in data_dict[camera_key]:
                         # TODO image shape
                         data_dict[camera_key][cam_name] = np.array(
-                            data_dict[camera_key][cam_name], dtype=np.uint16
+                            data_dict[camera_key][cam_name], dtype=np.uint8
                         )
                         camera.create_dataset(
                             cam_name,
@@ -53,8 +53,6 @@ class VROpH5pyDumper(H5pyDumper):
                     )
                 else:
                     data_dict[key] = np.array(data_dict[key], dtype=np.float32)
-                    if key == "timestamp":
-                        print(data_dict[key])
                     file.create_dataset(
                         key,
                         data=data_dict[key],

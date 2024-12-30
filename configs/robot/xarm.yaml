@@ -41,6 +41,9 @@ transmitters:
     xarm_info_transmitter_port: ${xarm_info_transmitter_port}
     xarm_ip: ${xarm_ip}
     action_port: ${action_port}
+    cam_port_offset: ${cam_port_offset}
+    camera_info: ${camera_info}
+    cam_configs: ${cam_configs}
 
 
 # Operators used to retarget the keypoints

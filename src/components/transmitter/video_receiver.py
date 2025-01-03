@@ -11,10 +11,14 @@ from PIL import Image
 import datetime
 import json
 
+from src.utils.network import ZMQCameraSubscriber
+from src.constants import *
 
 class VideoStreamer(object):
-    def __init__(self, host, cam_port, cam_name):
+    def __init__(self, host, cam_port, cam_name, depth_port=None):
         self._init_socket(host, cam_port)
+        if depth_port is not None:
+            self.depth_subscriber = ZMQCameraSubscriber(host = host, port = depth_port, topic_type="Depth")
         self.transforms = transforms.Compose(
             [transforms.ToPILImage(), transforms.ToTensor()]
         )
@@ -44,8 +48,12 @@ class VideoStreamer(object):
         # timestamp = data["timestamp"]
         return decoded_rgb, self.get_cam_name()
 
-    def process_frames(self):
+    def get_image_depth_tensor(self):
+        decoded_rgb, cam_name = self.get_image_tensor()
+        depth_image, tiemstamp = self.depth_subscriber.recv_depth_image()
+        return decoded_rgb, depth_image, cam_name
 
+    def process_frames(self):
         image_tensor, timestamp = self._get_image_tensor()
         image_data = {
             "encoded_rgb": image_tensor.tolist(),
@@ -97,6 +105,7 @@ class VideoReceiver(object):
                     host=self.host_address,
                     cam_port=self.port_offset + cam_idx,
                     cam_name=cam_name,
+                    depth_port= self.port_offset + cam_idx + DEPTH_PORT_OFFSET
                 )
             )
 

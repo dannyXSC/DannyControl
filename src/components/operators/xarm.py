@@ -60,7 +60,7 @@ class XarmOperator(Operator):
             o=XARM_ANCHOR_O_VALUES[:3],
             p1=XARM_ANCHOR_P1_VALUES[:3],
             p2=XARM_ANCHOR_P2_VALUES[:3],
-            eta=1200,
+            eta=1100,
             euler_angles=XARM_ANCHOR_O_VALUES[3:],
             P=self._P,
         )
@@ -102,6 +102,8 @@ class XarmOperator(Operator):
     def _reset_teleop(self):
         print("****** RESETTING TELEOP ****** ")
         self.robot.move_coords(XARM_ANCHOR_O_VALUES)
+        self.robot.move([33, 3.8, 29.4, 25.7, -4.3, 22.6, -23.2])
+        # self.robot.move_coords(XARM_ANCHOR_O_VALUES)
 
         # wait for VR request
         self._operation_response_socket.recv()
@@ -137,6 +139,8 @@ class XarmOperator(Operator):
         final_rotation = result["rotation"]
         final_position = result["position"]
         final_position[2] = max(final_position[2], 0)
+
+        # final_rotation = [180, 0, 90]
         final_pose = [*final_position] + [*final_rotation]
         if np.linalg.norm(moving_hand_frame[0]) < 1e-5:
             print(f"error {moving_hand_frame[0]}")

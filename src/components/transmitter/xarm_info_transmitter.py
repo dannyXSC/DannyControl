@@ -89,13 +89,17 @@ class XarmInfoNotifier(Component):
                     action = self.pre_action
 
                 cam_data = {}
+                depth_data = {}
                 timestamp = time.time()
                 for id in range(len(self.camera_info)):
-                    rgb_data, cam_name = self.video_receiver.get_cam_streamer(
+                    # rgb_data, cam_name = self.video_receiver.get_cam_streamer(
+                    #     id
+                    # ).get_image_tensor()
+                    rgb_data, depth_image, cam_name = self.video_receiver.get_cam_streamer(
                         id
-                    ).get_image_tensor()
-
+                    ).get_image_depth_tensor()
                     cam_data[cam_name] = rgb_data
+                    depth_data[cam_name] = depth_image
 
                 payload["step"] = step
                 payload["timestamp"] = timestamp
@@ -106,6 +110,7 @@ class XarmInfoNotifier(Component):
                 payload["transformed_hand_coords"] = transformed_hand_coords
                 payload["end_position"] = end_position
                 payload["cam_data"] = cam_data
+                payload["depth_data"] = depth_data
                 payload["action"] = action
 
                 self.xarm_publisher.pub_keypoints(

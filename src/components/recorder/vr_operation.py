@@ -26,9 +26,10 @@ class VROpH5pyDumper(H5pyDumper):
         print(f"H5py saving start! Path: {file_name}")
 
         camera_key = "cam_data"
+        depth_key = "depth_data"
         with h5py.File(file_name, "w") as file:
             camera = file.create_group(camera_key)
-
+            depth = file.create_group(depth_key)
             for key in data_dict.keys():
                 if key == camera_key:
                     for cam_name in data_dict[camera_key]:
@@ -40,6 +41,19 @@ class VROpH5pyDumper(H5pyDumper):
                             cam_name,
                             data=data_dict[camera_key][cam_name],
                             chunks=(1, 240, 426, 3),
+                            compression="gzip",
+                            compression_opts=6,
+                        )
+                elif key == depth_key:
+                    for cam_name in data_dict[depth_key]:
+                        # TODO image shape
+                        data_dict[depth_key][cam_name] = np.array(
+                            data_dict[depth_key][cam_name], dtype=np.uint16
+                        )
+                        print(data_dict[depth_key][cam_name])
+                        depth.create_dataset(
+                            cam_name,
+                            data=data_dict[depth_key][cam_name],
                             compression="gzip",
                             compression_opts=6,
                         )
@@ -60,11 +74,11 @@ class VROpH5pyDumper(H5pyDumper):
                         compression_opts=6,
                     )
         print(f"H5py saving complete! Path: {file_name}")
-    
+
     def save(self,metadata=None):
         file_name = self.get_file_path()
         VROpH5pyDumper._save(self.data_dict,file_name,metadata)
-    
+
     def get_active_tasks(self):
         for task in self.all_task:
             if task.done():

@@ -75,9 +75,9 @@ class VROpH5pyDumper(H5pyDumper):
                     )
         print(f"H5py saving complete! Path: {file_name}")
 
-    def save(self,metadata=None):
+    def save(self, metadata=None):
         file_name = self.get_file_path()
-        VROpH5pyDumper._save(self.data_dict,file_name,metadata)
+        VROpH5pyDumper._save(self.data_dict, file_name, metadata)
 
     def get_active_tasks(self):
         for task in self.all_task:
@@ -92,7 +92,11 @@ class VROpH5pyDumper(H5pyDumper):
             if task_num < self.max_workers + 5:
                 break
         file_name = self.get_file_path()
-        self.all_task.append(self.executor.submit(VROpH5pyDumper._save,self.data_dict,file_name,metadata))
+        self.all_task.append(
+            self.executor.submit(
+                VROpH5pyDumper._save, self.data_dict, file_name, metadata
+            )
+        )
 
     def stop(self):
         for future in as_completed(self.all_task):

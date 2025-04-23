@@ -19,6 +19,7 @@ import zmq
 import time
 
 XARM_ANCHOR_O_VALUES = [151.2, 312.3, -1, 180, 0, 90]
+XARM_ANCHOR_O_JOINTS = [16.8, 40.3, 63.6, 52.1, 125.2, -46.5, -153.1]
 XARM_ANCHOR_P1_VALUES = [159.9, 620, -1, 180, 0, 90]
 XARM_ANCHOR_P2_VALUES = [336.3, 309.9, -1, 180, 0, 90]
 
@@ -60,7 +61,7 @@ class XarmOperator(Operator):
             o=XARM_ANCHOR_O_VALUES[:3],
             p1=XARM_ANCHOR_P1_VALUES[:3],
             p2=XARM_ANCHOR_P2_VALUES[:3],
-            eta=1200,
+            eta=1100,
             euler_angles=XARM_ANCHOR_O_VALUES[3:],
             P=self._P,
         )
@@ -102,7 +103,7 @@ class XarmOperator(Operator):
     def _reset_teleop(self):
         print("****** RESETTING TELEOP ****** ")
         self.robot.move_coords(XARM_ANCHOR_O_VALUES)
-        self.robot.move([33, 3.8, 29.4, 25.7, -4.3, 22.6, -23.2])
+        self.robot.move(XARM_ANCHOR_O_JOINTS)
         # self.robot.move_coords(XARM_ANCHOR_O_VALUES)
 
         # wait for VR request
@@ -129,7 +130,7 @@ class XarmOperator(Operator):
 
     # Apply retargeted angles
     def _apply_retargeted_angles(self):
-        if self.is_first_frame:XarmOperator
+        if self.is_first_frame:
             self._reset_teleop()
             return
 
@@ -177,7 +178,7 @@ class XarmOperator(Operator):
             except KeyboardInterrupt:
                 break
 
-        self._operation_response_socket.close()
+        self.anchor_socket.close()
         self.transformed_arm_keypoint_subscriber.stop()
         self.transformed_hand_keypoint_subscriber.stop()
         self.robot.stop()

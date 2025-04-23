@@ -211,7 +211,8 @@ class RotationRetFactory(RetargeterFactory):
 
     def get_target(self, s_cur):
         if self.reset_completed():
-            return self.rotation_retargeter.get_target(s_cur)
+            hand_mat = frame_to_mat3(s_cur)
+            return self.rotation_retargeter.get_target(hand_mat)
         # error
         print("RotationRetFactory error")
 
@@ -245,6 +246,6 @@ class AnchorBasedRetFactory(RetargeterFactory):
         # x, y, z
         position = self.position_retargeter.get_target(origin)
         # mat
-        rotation_mat = self.rotation_retargeter.get_target(rotation_mat)
+        rotation_mat = self.rotation_retargeter.get_target(hand_frame)
         rotation = Rotation.from_matrix(rotation_mat).as_euler("xyz", degrees=True)
         return dict(position=position, rotation=rotation)

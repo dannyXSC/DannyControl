@@ -1,6 +1,9 @@
+from nbclient.client import timestamp
+
 from .robot import RobotWrapper
 from src.constants import *
 from xarm.wrapper import XArmAPI
+import time
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -53,9 +56,32 @@ class Xarm(RobotWrapper):
     @property
     def recorder_functions(self):
         return {
-            "joint_states": self.get_joint_state,
-            "cartesian_position": self.get_cartesian_position,
+            "joint_state": self.__get_joint_state,
+            "gripper_state": self.__get_gripper_state,
+            "cartesian_state": self.__get_cartesian_state,
         }
+
+    def __get_gripper_state(self):
+        return dict(
+            position= self.get_gripper_state(),
+            timestamp = time.time()
+        )
+
+    def __get_joint_state(self):
+        return dict(
+            position=self.get_joint_state(),
+            timestamp=time.time()
+        )
+
+    def __get_cartesian_state(self):
+        state = self.get_cartesian_position()
+        pos = state[:3]
+        rot = state[3:6]
+        return dict(
+            position = pos,
+            rotation = rot,
+            timestamp = time.time()
+        )
 
     @property
     def data_frequency(self):

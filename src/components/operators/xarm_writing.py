@@ -18,9 +18,19 @@ from copy import deepcopy as copy
 import zmq
 import time
 
-XARM_ANCHOR_O_VALUES = [151.2, 312.3, -1, 180, 0, 90]
-XARM_ANCHOR_P1_VALUES = [159.9, 620, -1, 180, 0, 90]
-XARM_ANCHOR_P2_VALUES = [336.3, 309.9, -1, 180, 0, 90]
+XARM_ANCHOR_O_VALUES = [151.2, 312.3, 123, -90, 90, 0]
+# XARM_ANCHOR_O_JOINTS = [9.8, 9.8, 5.2, 6.3, -253.4, 89.4, -2.3]
+XARM_ANCHOR_O_JOINTS = [
+    172.722,
+    -10.701013,
+    -159.12344,
+    6.6610107,
+    -255.1089,
+    86.74519,
+    -2.763501,
+]
+XARM_ANCHOR_P1_VALUES = [159.9, 620, 123, -90, 90, 0]
+XARM_ANCHOR_P2_VALUES = [336.3, 309.9, 123, -90, 90, 0]
 
 
 class XarmOperator(Operator):
@@ -60,7 +70,7 @@ class XarmOperator(Operator):
             o=XARM_ANCHOR_O_VALUES[:3],
             p1=XARM_ANCHOR_P1_VALUES[:3],
             p2=XARM_ANCHOR_P2_VALUES[:3],
-            eta=1200,
+            eta=1100,
             euler_angles=XARM_ANCHOR_O_VALUES[3:],
             P=self._P,
         )
@@ -102,8 +112,8 @@ class XarmOperator(Operator):
     def _reset_teleop(self):
         print("****** RESETTING TELEOP ****** ")
         self.robot.move_coords(XARM_ANCHOR_O_VALUES)
-        self.robot.move([33, 3.8, 29.4, 25.7, -4.3, 22.6, -23.2])
-        # self.robot.move_coords(XARM_ANCHOR_O_VALUES)
+        # self.robot.move(XARM_ANCHOR_O_JOINTS)
+        self.robot.move_coords(XARM_ANCHOR_O_VALUES)
 
         # wait for VR request
         self._operation_response_socket.recv()
@@ -124,12 +134,13 @@ class XarmOperator(Operator):
         self.is_first_frame = False
         # gripper settings
         # 1 for open
-        self.gripper_state = 1
-        self.robot.move_gripper_percentage(1)
+        # self.gripper_state = 1
+        self.gripper_state = 0
+        self.robot.move_gripper_percentage(self.gripper_state)
 
     # Apply retargeted angles
     def _apply_retargeted_angles(self):
-        if self.is_first_frame:XarmOperator
+        if self.is_first_frame:
             self._reset_teleop()
             return
 
@@ -140,7 +151,9 @@ class XarmOperator(Operator):
         final_position = result["position"]
         final_position[2] = max(final_position[2], 0)
 
-        # final_rotation = [180, 0, 90]
+        # fix
+        final_position[2] = 123
+        final_rotation = [-90, 90, 0]
         final_pose = [*final_position] + [*final_rotation]
         if np.linalg.norm(moving_hand_frame[0]) < 1e-5:
             print(f"error {moving_hand_frame[0]}")
@@ -149,6 +162,7 @@ class XarmOperator(Operator):
         self.robot.move_coords(final_pose, speed=1000)
         # TODO:
         gripper_state = self.get_gripper_state()
+        gripper_state = 0
         if gripper_state != self.gripper_state:
             self.robot.move_gripper_percentage(
                 gripper_state, wait=False, wait_motion=False
@@ -177,7 +191,7 @@ class XarmOperator(Operator):
             except KeyboardInterrupt:
                 break
 
-        self._operation_response_socket.close()
+        self.anchor_socket.close()
         self.transformed_arm_keypoint_subscriber.stop()
         self.transformed_hand_keypoint_subscriber.stop()
         self.robot.stop()

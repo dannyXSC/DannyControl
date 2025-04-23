@@ -163,3 +163,4 @@ cython_debug/
 dataset/
 outputs/
 *.hdf5
+test/

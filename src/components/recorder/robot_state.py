@@ -17,7 +17,7 @@ class RobotInformationRecord(Recorder):
             storage_path
     ):
         # Data function and attributes
-        self.robot = hydra.utils.instantiate(robot_configs, record_type=recorder_function_key)
+        self.robot = hydra.utils.instantiate(robot_configs)
         self.keypoint_function = self.robot.recorder_functions[recorder_function_key]
 
         # Timer

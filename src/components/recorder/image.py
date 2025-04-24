@@ -4,8 +4,7 @@ import time
 import h5py
 import numpy as np
 from .recorder import Recorder
-from src.constants import VR_FREQ, CAM_FPS, DEPTH_RECORD_FPS, IMAGE_RECORD_RESOLUTION, CAM_FPS_SIM, \
-    IMAGE_RECORD_RESOLUTION_SIM
+from src.constants import VR_FREQ, CAM_FPS, DEPTH_RECORD_FPS, IMAGE_RECORD_RESOLUTION
 from src.utils.files import store_pickle_data
 from src.utils.network import ZMQCameraSubscriber
 from src.utils.timer import FrequencyTimer
@@ -31,32 +30,21 @@ class RGBImageRecorder(Recorder):
             topic_type='RGB'
         )
         self.sim = sim
-        # Timer
-        if self.sim == True:
-            self.timer = FrequencyTimer(CAM_FPS_SIM)
-        else:
-            self.timer = FrequencyTimer(CAM_FPS)
+        self.timer = FrequencyTimer(CAM_FPS)
 
         # Storage path for file
         self._filename = filename
-        self._recorder_file_name = os.path.join(storage_path, filename + '.avi')
+        # self._recorder_file_name = os.path.join(storage_path, filename + '.avi')
+        self._recorder_file_name = os.path.join(storage_path, filename + '.mp4')
         self._metadata_filename = os.path.join(storage_path, filename + '.metadata')
 
-        # Initializing the recorder
-        if self.sim == True:
-            self.recorder = cv2.VideoWriter(
-                self._recorder_file_name,
-                cv2.VideoWriter_fourcc(*'XVID'),
-                CAM_FPS_SIM,
-                IMAGE_RECORD_RESOLUTION_SIM
-            )
-        else:
-            self.recorder = cv2.VideoWriter(
-                self._recorder_file_name,
-                cv2.VideoWriter_fourcc(*'XVID'),
-                CAM_FPS,
-                IMAGE_RECORD_RESOLUTION
-            )
+        self.recorder = cv2.VideoWriter(
+            self._recorder_file_name,
+            # cv2.VideoWriter_fourcc(*'XVID'),
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            CAM_FPS,
+            IMAGE_RECORD_RESOLUTION
+        )
         self.timestamps = []
 
     def stream(self):
@@ -65,10 +53,16 @@ class RGBImageRecorder(Recorder):
         self.num_image_frames = 0
         self.record_start_time = time.time()
 
+        # import cv2
         while True:
             try:
                 self.timer.start_loop()
                 image, timestamp = self.image_subscriber.recv_rgb_image()
+                print(image.shape)
+                # show the image
+                # cv2.imshow("img",image)
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    # break
                 self.recorder.write(image)
                 self.timestamps.append(timestamp)
                 self.num_image_frames += 1
@@ -76,7 +70,7 @@ class RGBImageRecorder(Recorder):
             except KeyboardInterrupt:
                 self.record_end_time = time.time()
                 break
-
+        # cv2.destroyAllWindows()
         # Closing the socket
         self.image_subscriber.stop()
 

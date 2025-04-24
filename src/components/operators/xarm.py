@@ -129,7 +129,7 @@ class XarmOperator(Operator):
 
     # Apply retargeted angles
     def _apply_retargeted_angles(self):
-        if self.is_first_frame:XarmOperator
+        if self.is_first_frame:
             self._reset_teleop()
             return
 

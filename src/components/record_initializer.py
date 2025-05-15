@@ -7,6 +7,7 @@ from .sensors import *
 from multiprocessing import Process
 from src.constants import *
 from src.components.initializers import ProcessInstantiator, _start_component
+import re
 
 
 class Recorder(ProcessInstantiator):
@@ -28,9 +29,11 @@ class Collector(ProcessInstantiator):
     to run the record data.
     """
 
-    def __init__(self, configs, demo_num):
+    def __init__(self, configs):
         super().__init__(configs)
-        self.demo_num = demo_num
+        self.demo_num = self._get_next_demo_num()  # Automatically set demo_num
+        # read storage path dictname 
+        # get the max number of the dictname
         self._storage_path = os.path.join(
             self.configs.storage_path,
             'demonstration_{}'.format(self.demo_num)
@@ -41,6 +44,25 @@ class Collector(ProcessInstantiator):
         # Initializing the recorders
         print("Initialising robot recorders")
         self._init_robot_recorders()
+
+    def _get_next_demo_num(self):
+        """
+        Get the next demonstration number based on existing directories.
+        """
+        if not os.path.exists(self.configs.storage_path):
+            os.mkdir(self.configs.storage_path)
+            return 0  # Start from 1 if the storage path doesn't exist
+
+        existing_dirs = os.listdir(self.configs.storage_path)
+        demo_nums = []
+
+        # Extract numbers from directories matching 'demonstration_{num}'
+        for dir_name in existing_dirs:
+            match = re.match(r'demonstration_(\d+)', dir_name)
+            if match:
+                demo_nums.append(int(match.group(1)))
+
+        return max(demo_nums, default=0) + 1  # Return the next number
 
     def _create_storage_dir(self):
         if os.path.exists(self._storage_path):

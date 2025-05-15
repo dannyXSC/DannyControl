@@ -7,7 +7,7 @@ defaults:
   - override hydra/job_logging: disabled 
 
 storage_path: extracted_data/
-demo_num: 271
+# demo_num: 271
 host: ${host_address}
 
 

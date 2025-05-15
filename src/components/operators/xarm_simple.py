@@ -140,6 +140,8 @@ class XarmOperator(Operator):
         )
         final_position = self.init_robot_o.o + shift
 
+        final_position[2] = max(0,final_position[2])
+
         final_rotation = self.rotation_ret.get_target(moving_hand_frame)
         final_rotation = Rotation.from_matrix(final_rotation).as_euler("xyz", degrees=True)
 

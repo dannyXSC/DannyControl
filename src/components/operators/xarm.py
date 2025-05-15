@@ -140,7 +140,7 @@ class XarmOperator(Operator):
         final_position = result["position"]
         final_position[2] = max(final_position[2], 0)
 
-        # final_rotation = [180, 0, 90]
+        final_rotation = [180, 0, 90]
         final_pose = [*final_position] + [*final_rotation]
         if np.linalg.norm(moving_hand_frame[0]) < 1e-5:
             print(f"error {moving_hand_frame[0]}")

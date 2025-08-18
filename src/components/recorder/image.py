@@ -60,9 +60,9 @@ class RGBImageRecorder(Recorder):
                 image, timestamp = self.image_subscriber.recv_rgb_image()
                 print(image.shape)
                 # show the image
-                # cv2.imshow("img",image)
-                # if cv2.waitKey(1) & 0xFF == ord('q'):
-                    # break
+                cv2.imshow("img",image)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
                 self.recorder.write(image)
                 self.timestamps.append(timestamp)
                 self.num_image_frames += 1

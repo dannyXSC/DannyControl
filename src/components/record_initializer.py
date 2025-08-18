@@ -38,6 +38,14 @@ class Collector(ProcessInstantiator):
             self.configs.storage_path,
             'demonstration_{}'.format(self.demo_num)
         )
+        os.makedirs(self._storage_path, exist_ok=True)
+        import json
+        raw_lang = list(self.configs.raw_lang)
+        if raw_lang is None:
+            raise ValueError("raw_lang is None")
+        else:
+            with open(f"{self._storage_path}/raw_lang.json", 'w+', encoding='utf-8') as f:
+                json.dump(raw_lang, f, ensure_ascii=False)
 
         self._create_storage_dir()
         self._init_camera_recorders()

@@ -72,6 +72,9 @@ class RealsenseCamera(Component):
         # Starting the pipeline
         cfg = self.pipeline.start(config)
         device = cfg.get_device()
+        
+        # device.hardware_reset()
+        # print(f"hardware reset done for:{device}")
 
         # Setting the depth mode to high accuracy mode
         depth_sensor = device.first_depth_sensor()

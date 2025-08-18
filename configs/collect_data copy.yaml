@@ -6,12 +6,11 @@ defaults:
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled 
 
-storage_path: /home/fvl/linxingyao/data/ask_to_act/raw/stack/block/scene5
+storage_path: /home/fvl/linxingyao/data/ask_to_act/raw/stack/cube/scene1
 # demo_num: 271
 host: ${host_address}
 
-raw_lang:
-  - "Stack the blue block on top of the red block."
+
 
 hydra:  
   output_subdir: null  
